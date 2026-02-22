@@ -1,0 +1,19 @@
+{
+    "name": "GymTrack",
+    "short_name": "GymTrack",
+    "description": "Traccia i tuoi allenamenti con timer real-time",
+    "start_url": "./",
+    "scope": "./",
+    "display": "standalone",
+    "orientation": "portrait",
+    "background_color": "#0a0a1a",
+    "theme_color": "#7c3aed",
+    "icons": [
+        {
+            "src": "./icon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        }
+    ]
+}
