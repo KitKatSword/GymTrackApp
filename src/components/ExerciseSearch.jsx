@@ -137,7 +137,11 @@ export default function ExerciseSearch({ onSelect, onClose }) {
                         className="exercise-list-item"
                         onClick={() => { onSelect(ex); onClose() }}
                     >
-                        <div className="exercise-list-icon">{abbr(ex.name)}</div>
+                        {ex.image ? (
+                            <img src={ex.image} alt="" className="exercise-list-img" />
+                        ) : (
+                            <div className="exercise-list-icon">{abbr(ex.name)}</div>
+                        )}
                         <div className="info">
                             <div className="name">
                                 {ex.name}

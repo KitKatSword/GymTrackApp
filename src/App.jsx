@@ -1,13 +1,16 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import useWorkouts from './hooks/useWorkouts'
 import useTimer from './hooks/useTimer'
+import useRoutines from './hooks/useRoutines'
 import RestTimerBar from './components/RestTimerBar'
 import Home from './pages/Home'
 import ActiveWorkout from './pages/ActiveWorkout'
 import HistoryCalendar from './pages/HistoryCalendar'
 import ExerciseLibrary from './pages/ExerciseLibrary'
+import Routines from './pages/Routines'
+import { exportAllData, importAllData } from './data/exercises'
 
-// Clean SVG icons for nav — no emojis
+// Clean SVG icons for nav
 const NavIcons = {
     home: (
         <svg className="nav-icon" viewBox="0 0 24 24">
@@ -18,6 +21,14 @@ const NavIcons = {
     workout: (
         <svg className="nav-icon" viewBox="0 0 24 24">
             <path d="M18 7.5v9M6 7.5v9M3 10.5h3m12 0h3M3 13.5h3m12 0h3" />
+        </svg>
+    ),
+    routines: (
+        <svg className="nav-icon" viewBox="0 0 24 24">
+            <path d="M17 1l4 4-4 4" />
+            <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+            <path d="M7 23l-4-4 4-4" />
+            <path d="M21 13v2a4 4 0 0 1-4 4H3" />
         </svg>
     ),
     history: (
@@ -43,6 +54,7 @@ const NavIcons = {
 const TABS = [
     { id: 'home', label: 'Home', icon: NavIcons.home },
     { id: 'workout', label: 'Workout', icon: NavIcons.workout },
+    { id: 'routines', label: 'Routine', icon: NavIcons.routines },
     { id: 'history', label: 'Storico', icon: NavIcons.history },
     { id: 'exercises', label: 'Esercizi', icon: NavIcons.exercises },
 ]
@@ -52,12 +64,14 @@ export default function App() {
     const [activeWorkoutId, setActiveWorkoutId] = useState(() => {
         try { return localStorage.getItem('gymtrack_active_workout') || null } catch { return null }
     })
+    const importRef = useRef(null)
 
     const workoutActions = useWorkouts()
     const timer = useTimer()
+    const routineActions = useRoutines()
 
     const {
-        workouts, createWorkout, finishWorkout, deleteWorkout,
+        workouts, createWorkout, createWorkoutFromRoutine, finishWorkout, deleteWorkout,
         addExercise, removeExercise, addSet, removeSet, updateSet,
         toggleSetComplete, duplicateWorkout, getTodayWorkout, getStats,
     } = workoutActions
@@ -98,6 +112,29 @@ export default function App() {
         }
     }, [duplicateWorkout])
 
+    const handleStartFromRoutine = useCallback((routine) => {
+        const w = createWorkoutFromRoutine(routine)
+        setActiveWorkoutId(w.id)
+        localStorage.setItem('gymtrack_active_workout', w.id)
+        setActiveTab('workout')
+    }, [createWorkoutFromRoutine])
+
+    const handleExport = useCallback(() => {
+        exportAllData()
+    }, [])
+
+    const handleImport = useCallback(async (e) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+        try {
+            await importAllData(file)
+            window.location.reload()
+        } catch (err) {
+            alert('Errore importazione: file non valido')
+        }
+        e.target.value = ''
+    }, [])
+
     return (
         <>
             {activeTab === 'home' && (
@@ -106,6 +143,8 @@ export default function App() {
                     todayWorkout={todayWorkout || (activeWorkout?.endTime === null ? activeWorkout : null)}
                     onStartWorkout={handleStartWorkout}
                     onResumeWorkout={handleResumeWorkout}
+                    onExport={handleExport}
+                    onImport={() => importRef.current?.click()}
                 />
             )}
 
@@ -126,6 +165,15 @@ export default function App() {
                 />
             )}
 
+            {activeTab === 'routines' && (
+                <Routines
+                    routines={routineActions.routines}
+                    onCreateRoutine={routineActions.createRoutine}
+                    onDeleteRoutine={routineActions.deleteRoutine}
+                    onStartFromRoutine={handleStartFromRoutine}
+                />
+            )}
+
             {activeTab === 'history' && (
                 <HistoryCalendar
                     workouts={workouts}
@@ -138,7 +186,16 @@ export default function App() {
                 <ExerciseLibrary />
             )}
 
-            {/* Compact rest timer bar — always above nav */}
+            {/* Hidden file input for import */}
+            <input
+                ref={importRef}
+                type="file"
+                accept=".json"
+                onChange={handleImport}
+                style={{ display: 'none' }}
+            />
+
+            {/* Compact rest timer bar */}
             <RestTimerBar timer={timer} />
 
             {/* Bottom navigation */}

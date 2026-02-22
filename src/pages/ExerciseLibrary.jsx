@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react'
-import { getAllExercises, getCustomExercises, saveCustomExercise, deleteCustomExercise, PARAM_TYPES, categories } from '../data/exercises'
+import { useState, useMemo, useRef } from 'react'
+import { getAllExercises, getCustomExercises, saveCustomExercise, deleteCustomExercise, PARAM_TYPES, categories, resizeImageToBase64 } from '../data/exercises'
 
 function generateId() {
     return 'custom-' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5)
@@ -19,13 +19,21 @@ export default function ExerciseLibrary() {
     const [newName, setNewName] = useState('')
     const [newCategory, setNewCategory] = useState('Petto')
     const [newParams, setNewParams] = useState(['weight', 'reps'])
-    const [filterCategory, setFilterCategory] = useState('Custom')
+    const [newImage, setNewImage] = useState(null)
     const [deleteConfirm, setDeleteConfirm] = useState(null)
+    const fileInputRef = useRef(null)
 
     const customExercises = useMemo(() => getCustomExercises(), [refreshKey])
 
     const toggleParam = (pid) =>
         setNewParams(prev => prev.includes(pid) ? prev.filter(p => p !== pid) : [...prev, pid])
+
+    const handleImagePick = async (e) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+        const base64 = await resizeImageToBase64(file, 200)
+        setNewImage(base64)
+    }
 
     const handleCreate = () => {
         if (!newName.trim() || newParams.length === 0) return
@@ -36,8 +44,9 @@ export default function ExerciseLibrary() {
             category: newCategory,
             params: newParams,
             isCustom: true,
+            image: newImage,
         })
-        setNewName(''); setNewParams(['weight', 'reps'])
+        setNewName(''); setNewParams(['weight', 'reps']); setNewImage(null)
         setShowForm(false); setRefreshKey(k => k + 1)
     }
 
@@ -70,6 +79,35 @@ export default function ExerciseLibrary() {
                         onChange={(e) => setNewName(e.target.value)}
                         style={{ marginBottom: 'var(--space-3)' }}
                     />
+
+                    {/* Image picker */}
+                    <div className="create-form-section">
+                        <div className="create-form-section-label">Immagine (opzionale)</div>
+                        <div className="image-picker-row">
+                            {newImage ? (
+                                <div className="image-preview-container">
+                                    <img src={newImage} alt="" className="image-preview" />
+                                    <button className="image-remove-btn" onClick={() => setNewImage(null)}>✕</button>
+                                </div>
+                            ) : (
+                                <button className="image-picker-btn" onClick={() => fileInputRef.current?.click()}>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" />
+                                        <circle cx="8.5" cy="8.5" r="1.5" />
+                                        <polyline points="21 15 16 10 5 21" />
+                                    </svg>
+                                    <span>Aggiungi foto</span>
+                                </button>
+                            )}
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/*"
+                                onChange={handleImagePick}
+                                style={{ display: 'none' }}
+                            />
+                        </div>
+                    </div>
 
                     {/* Category */}
                     <div className="create-form-section">
@@ -135,7 +173,11 @@ export default function ExerciseLibrary() {
                     </div>
                     {customExercises.map(ex => (
                         <div key={ex.id} className="library-item">
-                            <div className="library-item-icon">{abbr(ex.name)}</div>
+                            {ex.image ? (
+                                <img src={ex.image} alt="" className="library-item-img" />
+                            ) : (
+                                <div className="library-item-icon">{abbr(ex.name)}</div>
+                            )}
                             <div style={{ flex: 1, minWidth: 0 }}>
                                 <div style={{ fontWeight: 600, fontSize: 'var(--text-md)' }}>{ex.name}</div>
                                 <div style={{ display: 'flex', gap: 4, marginTop: 3, flexWrap: 'wrap' }}>

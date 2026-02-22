@@ -91,6 +91,13 @@ export function saveCustomExercise(exercise) {
     localStorage.setItem('gymtrack_custom_exercises', JSON.stringify(customs))
 }
 
+export function updateCustomExercise(exerciseId, updates) {
+    const customs = loadCustomExercises().map(e =>
+        e.id === exerciseId ? { ...e, ...updates } : e
+    )
+    localStorage.setItem('gymtrack_custom_exercises', JSON.stringify(customs))
+}
+
 export function deleteCustomExercise(exerciseId) {
     const customs = loadCustomExercises().filter(e => e.id !== exerciseId)
     localStorage.setItem('gymtrack_custom_exercises', JSON.stringify(customs))
@@ -102,6 +109,64 @@ export function getAllExercises() {
 
 export function getCustomExercises() {
     return loadCustomExercises()
+}
+
+// Resize image to max dimensions and return base64
+export function resizeImageToBase64(file, maxSize = 200) {
+    return new Promise((resolve) => {
+        const reader = new FileReader()
+        reader.onload = (e) => {
+            const img = new Image()
+            img.onload = () => {
+                const canvas = document.createElement('canvas')
+                let w = img.width, h = img.height
+                if (w > h) { if (w > maxSize) { h = h * maxSize / w; w = maxSize } }
+                else { if (h > maxSize) { w = w * maxSize / h; h = maxSize } }
+                canvas.width = w; canvas.height = h
+                canvas.getContext('2d').drawImage(img, 0, 0, w, h)
+                resolve(canvas.toDataURL('image/webp', 0.8))
+            }
+            img.src = e.target.result
+        }
+        reader.readAsDataURL(file)
+    })
+}
+
+// Export all app data as JSON
+export function exportAllData() {
+    const data = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        workouts: JSON.parse(localStorage.getItem('gymtrack_workouts') || '[]'),
+        customExercises: loadCustomExercises(),
+        routines: JSON.parse(localStorage.getItem('gymtrack_routines') || '[]'),
+    }
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `gymtrack-backup-${new Date().toISOString().split('T')[0]}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+}
+
+// Import data from JSON file
+export function importAllData(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = (e) => {
+            try {
+                const data = JSON.parse(e.target.result)
+                if (data.workouts) localStorage.setItem('gymtrack_workouts', JSON.stringify(data.workouts))
+                if (data.customExercises) localStorage.setItem('gymtrack_custom_exercises', JSON.stringify(data.customExercises))
+                if (data.routines) localStorage.setItem('gymtrack_routines', JSON.stringify(data.routines))
+                resolve(data)
+            } catch (err) {
+                reject(err)
+            }
+        }
+        reader.readAsText(file)
+    })
 }
 
 export default exercises

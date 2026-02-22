@@ -1,4 +1,4 @@
-export default function Home({ stats, todayWorkout, onStartWorkout, onResumeWorkout }) {
+export default function Home({ stats, todayWorkout, onStartWorkout, onResumeWorkout, onExport, onImport }) {
     const today = new Date()
     const dayNames = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato']
     const monthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
@@ -72,6 +72,25 @@ export default function Home({ stats, todayWorkout, onStartWorkout, onResumeWork
                 </div>
                 <div className="motivation-card-subtitle">
                     {stats.totalWorkouts} allenamenti completati
+                </div>
+            </div>
+
+            {/* Backup section */}
+            <div className="backup-section">
+                <div className="section-label">Backup Dati</div>
+                <div className="backup-buttons">
+                    <button className="btn btn-secondary btn-sm" onClick={onExport} style={{ flex: 1 }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6 }}>
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                        Esporta
+                    </button>
+                    <button className="btn btn-secondary btn-sm" onClick={onImport} style={{ flex: 1 }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6 }}>
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
+                        </svg>
+                        Importa
+                    </button>
                 </div>
             </div>
         </div>

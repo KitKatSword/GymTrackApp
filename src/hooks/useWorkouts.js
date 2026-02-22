@@ -40,6 +40,39 @@ export default function useWorkouts() {
         return workout
     }, [])
 
+    const createWorkoutFromRoutine = useCallback((routine) => {
+        const now = new Date()
+        const exercises = routine.exercises.map(rex => {
+            const params = rex.params || ['weight', 'reps']
+            const sets = Array.from({ length: rex.setsCount || 3 }, () => {
+                const set = { id: generateId(), completed: false }
+                params.forEach(p => { set[p] = '' })
+                return set
+            })
+            return {
+                id: generateId(),
+                name: rex.name,
+                emoji: rex.emoji || '',
+                category: rex.category,
+                params,
+                isCustom: rex.isCustom || false,
+                image: rex.image || null,
+                sets,
+            }
+        })
+        const workout = {
+            id: generateId(),
+            date: now.toISOString().split('T')[0],
+            startTime: now.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
+            startTimestamp: now.getTime(),
+            endTime: null,
+            routineName: routine.name,
+            exercises,
+        }
+        setWorkouts(prev => [workout, ...prev])
+        return workout
+    }, [])
+
     const finishWorkout = useCallback((workoutId) => {
         setWorkouts(prev => prev.map(w =>
             w.id === workoutId
@@ -237,6 +270,7 @@ export default function useWorkouts() {
     return {
         workouts,
         createWorkout,
+        createWorkoutFromRoutine,
         finishWorkout,
         deleteWorkout,
         addExercise,
