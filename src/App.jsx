@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import useWorkouts from './hooks/useWorkouts'
 import useTimer from './hooks/useTimer'
 import useRoutines from './hooks/useRoutines'
@@ -65,6 +65,21 @@ export default function App() {
         try { return localStorage.getItem('gymtrack_active_workout') || null } catch { return null }
     })
     const importRef = useRef(null)
+
+    // Theme
+    const [theme, setTheme] = useState(() => {
+        try { return localStorage.getItem('gymtrack_theme') || 'dark' } catch { return 'dark' }
+    })
+
+    useEffect(() => {
+        document.documentElement.setAttribute('data-theme', theme)
+        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'light' ? '#f5f5fa' : '#0a0a1a')
+        localStorage.setItem('gymtrack_theme', theme)
+    }, [theme])
+
+    const toggleTheme = useCallback(() => {
+        setTheme(t => t === 'dark' ? 'light' : 'dark')
+    }, [])
 
     const workoutActions = useWorkouts()
     const timer = useTimer()
@@ -145,6 +160,8 @@ export default function App() {
                     onResumeWorkout={handleResumeWorkout}
                     onExport={handleExport}
                     onImport={() => importRef.current?.click()}
+                    theme={theme}
+                    onToggleTheme={toggleTheme}
                 />
             )}
 

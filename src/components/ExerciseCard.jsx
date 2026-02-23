@@ -98,7 +98,7 @@ export default function ExerciseCard({
                 className="set-row"
                 style={{
                     gridTemplateColumns: gridTemplate,
-                    borderBottom: "1px solid rgba(255,255,255,0.07)",
+                    borderBottom: "1px solid var(--border)",
                 }}
             >
                 <div className="set-label">#</div>
