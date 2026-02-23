@@ -44,15 +44,14 @@ function ParamParts({ ex }) {
 }
 
 export default function HistoryCalendar({ workouts, onDuplicate, onDelete }) {
+    const today = new Date().toISOString().split('T')[0]
     const [viewDate, setViewDate] = useState(new Date())
-    const [selectedDate, setSelectedDate] = useState(null)
+    const [selectedDate, setSelectedDate] = useState(today)
     const [expandedId, setExpandedId] = useState(null)
     const [deleteConfirm, setDeleteConfirm] = useState(null)
-    const [showAllHistory, setShowAllHistory] = useState(false)
 
     const year = viewDate.getFullYear()
     const month = viewDate.getMonth()
-    const today = new Date().toISOString().split('T')[0]
 
     const completedWorkouts = workouts.filter(w => w.endTime)
 
@@ -79,7 +78,6 @@ export default function HistoryCalendar({ workouts, onDuplicate, onDelete }) {
     }, [year, month])
 
     const selectedWorkouts = selectedDate ? (workoutsByDate[selectedDate] || []) : []
-    const recentList = showAllHistory ? completedWorkouts : completedWorkouts.slice(0, 6)
 
     return (
         <div className="page">
@@ -123,7 +121,7 @@ export default function HistoryCalendar({ workouts, onDuplicate, onDelete }) {
                     return (
                         <button
                             key={day.date}
-                            onClick={() => setSelectedDate(isSelected ? null : day.date)}
+                            onClick={() => setSelectedDate(day.date)}
                             className={`calendar-day-btn ${isToday ? 'today' : ''} ${hasWorkout && !isSelected ? 'has-workout' : ''} ${isSelected ? 'selected' : ''}`}
                         >
                             {day.day}
@@ -133,46 +131,34 @@ export default function HistoryCalendar({ workouts, onDuplicate, onDelete }) {
                 })}
             </div>
 
-            {/* Selected date */}
+            {/* Selected date workouts */}
             {selectedDate && (
-                <div style={{ marginBottom: 'var(--space-4)', animation: 'slideDown 0.15s ease' }}>
-                    <div style={{ fontWeight: 700, fontSize: 'var(--text-md)', marginBottom: 10 }}>
-                        {formatDate(selectedDate)}
+                <div style={{ marginTop: 'var(--space-4)', animation: 'slideDown 0.15s ease' }}>
+                    <div className="section-label" style={{ marginBottom: 12 }}>
+                        Allenamenti del {formatDate(selectedDate)}
                     </div>
-                    {selectedWorkouts.length === 0 ? (
-                        <div style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)', padding: '12px 0' }}>Nessun allenamento completato</div>
-                    ) : (
-                        selectedWorkouts.map(w => <WorkoutCard key={w.id} w={w} expandedId={expandedId} setExpandedId={setExpandedId} setDeleteConfirm={setDeleteConfirm} onDuplicate={onDuplicate} />)
-                    )}
-                    <div className="divider" />
-                </div>
-            )}
 
-            {/* Workout list */}
-            {completedWorkouts.length === 0 ? (
-                <div className="empty-state">
-                    <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
-                    </svg>
-                    <div className="title">Nessun allenamento</div>
-                    <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>Completa il primo allenamento per vederlo qui</p>
-                </div>
-            ) : (
-                <>
-                    <div className="section-label">Tutti gli allenamenti</div>
-                    {recentList.map(w => (
-                        <WorkoutCard key={w.id} w={w} expandedId={expandedId} setExpandedId={setExpandedId} setDeleteConfirm={setDeleteConfirm} onDuplicate={onDuplicate} />
-                    ))}
-                    {completedWorkouts.length > 6 && (
-                        <button
-                            className="btn btn-secondary btn-full btn-sm"
-                            onClick={() => setShowAllHistory(!showAllHistory)}
-                            style={{ marginTop: 4 }}
-                        >
-                            {showAllHistory ? 'Mostra meno' : `Vedi tutti (${completedWorkouts.length})`}
-                        </button>
+                    {selectedWorkouts.length === 0 ? (
+                        <div className="empty-state" style={{ padding: 'var(--space-6) 0' }}>
+                            <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+                            </svg>
+                            <div className="title">Nessun allenamento</div>
+                            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>Non hai completato allenamenti in questa data.</p>
+                        </div>
+                    ) : (
+                        selectedWorkouts.map(w =>
+                            <WorkoutCard
+                                key={w.id}
+                                w={w}
+                                expandedId={expandedId}
+                                setExpandedId={setExpandedId}
+                                setDeleteConfirm={setDeleteConfirm}
+                                onDuplicate={onDuplicate}
+                            />
+                        )
                     )}
-                </>
+                </div>
             )}
 
             {/* Delete confirm */}
