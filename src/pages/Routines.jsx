@@ -1,6 +1,7 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { getAllExercises, PARAM_TYPES } from '../data/exercises'
 import ExerciseSearch from '../components/ExerciseSearch'
+import VideoPlayer from '../components/VideoPlayer'
 
 function abbr(name) {
     const words = name.trim().split(/\s+/)
@@ -8,13 +9,27 @@ function abbr(name) {
     return (words[0][0] + words[1][0]).toUpperCase()
 }
 
-export default function Routines({ routines, onCreateRoutine, onDeleteRoutine, onStartFromRoutine }) {
+export default function Routines({ routines, onCreateRoutine, onDeleteRoutine, onStartFromRoutine, onLogVideo }) {
     const [showCreate, setShowCreate] = useState(false)
     const [routineName, setRoutineName] = useState('')
     const [selectedExercises, setSelectedExercises] = useState([])
     const [showExercisePicker, setShowExercisePicker] = useState(false)
     const [deleteConfirm, setDeleteConfirm] = useState(null)
     const [expandedId, setExpandedId] = useState(null)
+    const [completedVideos, setCompletedVideos] = useState([])
+    const [selectedVideo, setSelectedVideo] = useState(null)
+
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem('gymtrack_completed_videos')
+            if (raw) {
+                const parsed = JSON.parse(raw)
+                // Filter out the old string items just in case 
+                const valid = parsed.filter(v => typeof v === 'object' && v.yt)
+                setCompletedVideos(valid)
+            }
+        } catch { }
+    }, [])
 
     const handleAddExercise = (exercise) => {
         setSelectedExercises(prev => [...prev, { ...exercise, setsCount: 3 }])
@@ -121,6 +136,34 @@ export default function Routines({ routines, onCreateRoutine, onDeleteRoutine, o
                 />
             )}
 
+            {/* Completed Videos Carousel */}
+            {completedVideos.length > 0 && !showCreate && (
+                <div className="video-section" style={{ marginTop: 0, marginBottom: 'var(--space-5)' }}>
+                    <div className="section-label" style={{ marginBottom: 'var(--space-2)' }}>Video Completati</div>
+                    <div className="video-carousel">
+                        {completedVideos.map(v => {
+                            const thumb = `https://img.youtube.com/vi/${v.yt}/mqdefault.jpg`
+                            return (
+                                <div key={v.yt} className="video-card" onClick={() => setSelectedVideo(v)}>
+                                    <div className="video-card-thumb">
+                                        <img src={thumb} alt="" loading="lazy" />
+                                        {v.dur && <div className="video-card-duration">{v.dur}</div>}
+                                        <div className="video-card-completed">✓</div>
+                                    </div>
+                                    <div className="video-card-body">
+                                        <div className="video-card-title" style={{ WebkitLineClamp: 1 }}>{v.title}</div>
+                                        <div className="video-card-meta">
+                                            {v.kcal > 0 && <span className="video-badge">🔥 {v.kcal}</span>}
+                                            {v.cat && <span className="video-badge cat">{v.cat}</span>}
+                                        </div>
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
+                </div>
+            )}
+
             {/* Routines list */}
             {routines.length === 0 && !showCreate ? (
                 <div className="empty-state">
@@ -201,6 +244,16 @@ export default function Routines({ routines, onCreateRoutine, onDeleteRoutine, o
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Video Player form from Completed Videos */}
+            {selectedVideo && (
+                <VideoPlayer
+                    video={selectedVideo}
+                    onClose={() => setSelectedVideo(null)}
+                    onComplete={(v) => { if (onLogVideo) onLogVideo(v) }}
+                    isCompleted={true}
+                />
             )}
         </div>
     )

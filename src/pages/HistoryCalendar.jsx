@@ -20,6 +20,13 @@ function getDuration(start, end) {
 }
 
 function ParamParts({ ex }) {
+    if (ex.isVideo) {
+        return (
+            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+                📺 Follow Along{ex.videoDuration ? ` · ${ex.videoDuration}` : ''}{ex.videoKcal > 0 ? ` · 🔥 ${ex.videoKcal} kcal` : ''}
+            </span>
+        )
+    }
     const params = ex.params || ['weight', 'reps']
     return ex.sets.filter(s => s.completed).map((s, i) => {
         const parts = params.map(p => {
@@ -205,7 +212,7 @@ function WorkoutCard({ w, expandedId, setExpandedId, setDeleteConfirm, onDuplica
                     </div>
                 </div>
                 <span className="history-sets-badge">
-                    {totalSets} serie
+                    {w.isVideoWorkout ? '📺 Video' : `${totalSets} serie`}
                 </span>
             </div>
 

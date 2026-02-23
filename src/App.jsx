@@ -7,6 +7,7 @@ import Home from './pages/Home'
 import ActiveWorkout from './pages/ActiveWorkout'
 import HistoryCalendar from './pages/HistoryCalendar'
 import Routines from './pages/Routines'
+import VideoLibrary from './pages/VideoLibrary'
 import { exportAllData, importAllData } from './data/exercises'
 
 // Clean SVG icons for nav
@@ -48,12 +49,19 @@ const NavIcons = {
             <line x1="3" y1="18" x2="3.01" y2="18" />
         </svg>
     ),
+    video: (
+        <svg className="nav-icon" viewBox="0 0 24 24">
+            <rect x="2" y="4" width="20" height="16" rx="2" ry="2" />
+            <polygon points="10 8 16 12 10 16 10 8" />
+        </svg>
+    ),
 }
 
 const TABS = [
     { id: 'home', label: 'Home', icon: NavIcons.home },
     { id: 'workout', label: 'Workout', icon: NavIcons.workout },
     { id: 'routines', label: 'Routine', icon: NavIcons.routines },
+    { id: 'video', label: 'Libreria', icon: NavIcons.video },
     { id: 'history', label: 'Storico', icon: NavIcons.history },
 ]
 
@@ -156,11 +164,9 @@ export default function App() {
                     todayWorkout={todayWorkout || (activeWorkout?.endTime === null ? activeWorkout : null)}
                     onStartWorkout={handleStartWorkout}
                     onResumeWorkout={handleResumeWorkout}
-                    onExport={handleExport}
                     onImport={() => importRef.current?.click()}
                     theme={theme}
                     onToggleTheme={toggleTheme}
-                    onLogVideo={logVideoWorkout}
                 />
             )}
 
@@ -187,7 +193,12 @@ export default function App() {
                     onCreateRoutine={routineActions.createRoutine}
                     onDeleteRoutine={routineActions.deleteRoutine}
                     onStartFromRoutine={handleStartFromRoutine}
+                    onLogVideo={logVideoWorkout}
                 />
+            )}
+
+            {activeTab === 'video' && (
+                <VideoLibrary onLogVideo={logVideoWorkout} />
             )}
 
             {activeTab === 'history' && (

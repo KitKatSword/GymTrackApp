@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { getAllExercises, getCustomExercises, saveCustomExercise, deleteCustomExercise, categories, PARAM_TYPES } from '../data/exercises'
+import { getAllExercises, getCustomExercises, saveCustomExercise, updateCustomExercise, deleteCustomExercise, categories, PARAM_TYPES } from '../data/exercises'
 
 function generateId() {
     return 'custom-' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5)
@@ -16,6 +16,9 @@ export default function ExerciseSearch({ onSelect, onClose }) {
     const [category, setCategory] = useState('Tutti')
     const [showCreateForm, setShowCreateForm] = useState(false)
     const [refreshKey, setRefreshKey] = useState(0)
+    const [editingId, setEditingId] = useState(null)
+    const [editName, setEditName] = useState('')
+    const [editParams, setEditParams] = useState([])
 
     const [newName, setNewName] = useState('')
     const [newParams, setNewParams] = useState(['weight', 'reps'])
@@ -50,8 +53,31 @@ export default function ExerciseSearch({ onSelect, onClose }) {
     const handleDelete = (e, id) => {
         e.stopPropagation()
         deleteCustomExercise(id)
+        if (editingId === id) setEditingId(null)
         setRefreshKey(k => k + 1)
     }
+
+    const handleStartEdit = (e, ex) => {
+        e.stopPropagation()
+        if (editingId === ex.id) {
+            setEditingId(null)
+            return
+        }
+        setEditingId(ex.id)
+        setEditName(ex.name)
+        setEditParams(ex.params || ['weight', 'reps'])
+    }
+
+    const handleSaveEdit = (e) => {
+        e.stopPropagation()
+        if (!editName.trim() || editParams.length === 0) return
+        updateCustomExercise(editingId, { name: editName.trim(), params: editParams })
+        setEditingId(null)
+        setRefreshKey(k => k + 1)
+    }
+
+    const toggleEditParam = (pid) =>
+        setEditParams(prev => prev.includes(pid) ? prev.filter(p => p !== pid) : [...prev, pid])
 
     return (
         <div className="exercise-search">
@@ -132,39 +158,81 @@ export default function ExerciseSearch({ onSelect, onClose }) {
 
             <div className="exercise-list">
                 {filtered.map(ex => (
-                    <div
-                        key={ex.id}
-                        className="exercise-list-item"
-                        onClick={() => { onSelect(ex); onClose() }}
-                    >
-                        {ex.image ? (
-                            <img src={ex.image} alt="" className="exercise-list-img" />
-                        ) : (
-                            <div className="exercise-list-icon">{abbr(ex.name)}</div>
-                        )}
-                        <div className="info">
-                            <div className="name">
-                                {ex.name}
-                                {ex.isCustom && (
-                                    <span className="custom-badge">CUSTOM</span>
-                                )}
+                    <div key={ex.id}>
+                        <div
+                            className="exercise-list-item"
+                            onClick={() => { onSelect(ex); onClose() }}
+                        >
+                            {ex.image ? (
+                                <img src={ex.image} alt="" className="exercise-list-img" />
+                            ) : (
+                                <div className="exercise-list-icon">{abbr(ex.name)}</div>
+                            )}
+                            <div className="info">
+                                <div className="name">
+                                    {ex.name}
+                                    {ex.isCustom && (
+                                        <span className="custom-badge">CUSTOM</span>
+                                    )}
+                                </div>
+                                <div className="category">
+                                    {ex.category}
+                                    {ex.params && (
+                                        <span style={{ marginLeft: 6, opacity: 0.7 }}>
+                                            {ex.params.map(p => PARAM_TYPES.find(pt => pt.id === p)?.label).join(' · ')}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
-                            <div className="category">
-                                {ex.category}
-                                {ex.params && (
-                                    <span style={{ marginLeft: 6, opacity: 0.7 }}>
-                                        {ex.params.map(p => PARAM_TYPES.find(pt => pt.id === p)?.label).join(' · ')}
-                                    </span>
-                                )}
-                            </div>
+                            {ex.isCustom && (
+                                <>
+                                    <button
+                                        className="exercise-edit-btn"
+                                        onClick={(e) => handleStartEdit(e, ex)}
+                                    >
+                                        ✎
+                                    </button>
+                                    <button
+                                        className="exercise-delete-btn"
+                                        onClick={(e) => handleDelete(e, ex.id)}
+                                    >
+                                        ✕
+                                    </button>
+                                </>
+                            )}
                         </div>
-                        {ex.isCustom && (
-                            <button
-                                className="exercise-delete-btn"
-                                onClick={(e) => handleDelete(e, ex.id)}
-                            >
-                                ✕
-                            </button>
+                        {/* Inline edit form */}
+                        {editingId === ex.id && (
+                            <div className="edit-form-inline" onClick={e => e.stopPropagation()}>
+                                <input
+                                    className="input"
+                                    type="text"
+                                    value={editName}
+                                    onChange={(e) => setEditName(e.target.value)}
+                                    placeholder="Nome esercizio..."
+                                    style={{ marginBottom: 'var(--space-2)' }}
+                                />
+                                <div className="create-form-chips" style={{ marginBottom: 'var(--space-2)' }}>
+                                    {PARAM_TYPES.map(p => (
+                                        <button
+                                            key={p.id}
+                                            className={`chip ${editParams.includes(p.id) ? 'active' : ''}`}
+                                            onClick={() => toggleEditParam(p.id)}
+                                            style={{ flex: 1 }}
+                                        >
+                                            {p.label}
+                                        </button>
+                                    ))}
+                                </div>
+                                <button
+                                    className="btn btn-primary btn-full btn-sm"
+                                    onClick={handleSaveEdit}
+                                    disabled={!editName.trim() || editParams.length === 0}
+                                    style={{ opacity: (!editName.trim() || editParams.length === 0) ? 0.45 : 1 }}
+                                >
+                                    Salva Modifiche
+                                </button>
+                            </div>
                         )}
                     </div>
                 ))}

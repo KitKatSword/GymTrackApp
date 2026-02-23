@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import ExerciseCard from "../components/ExerciseCard";
+import VideoExerciseCard from "../components/VideoExerciseCard";
 import ExerciseSearch from "../components/ExerciseSearch";
 
 export default function ActiveWorkout({
@@ -150,19 +151,30 @@ export default function ActiveWorkout({
 
       {/* Exercise list */}
       {workout.exercises.map((ex) => (
-        <ExerciseCard
-          key={ex.id}
-          exercise={ex}
-          workoutId={workout.id}
-          onAddSet={onAddSet}
-          onRemoveSet={onRemoveSet}
-          onUpdateSet={onUpdateSet}
-          onToggleSet={onToggleSet}
-          onRemoveExercise={onRemoveExercise}
-          onStartRest={handleStartRest}
-          onUpdateNotes={onUpdateExerciseNotes}
-          activeRestSetId={activeRestSetId}
-        />
+        ex.isVideo || ex.videoYt ? (
+          <VideoExerciseCard
+            key={ex.id}
+            exercise={ex}
+            workoutId={workout.id}
+            onToggleSet={onToggleSet}
+            onRemoveExercise={onRemoveExercise}
+            onUpdateNotes={onUpdateExerciseNotes}
+          />
+        ) : (
+          <ExerciseCard
+            key={ex.id}
+            exercise={ex}
+            workoutId={workout.id}
+            onAddSet={onAddSet}
+            onRemoveSet={onRemoveSet}
+            onUpdateSet={onUpdateSet}
+            onToggleSet={onToggleSet}
+            onRemoveExercise={onRemoveExercise}
+            onStartRest={handleStartRest}
+            onUpdateNotes={onUpdateExerciseNotes}
+            activeRestSetId={activeRestSetId}
+          />
+        )
       ))}
 
       {/* Session Notes */}

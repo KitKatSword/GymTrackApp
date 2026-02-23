@@ -387,6 +387,7 @@ ol {
     transition: all var(--transition-fast);
     cursor: pointer;
     white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .chip:active {
@@ -2191,4 +2192,117 @@ ol {
         min-width: 280px;
         max-width: 280px;
     }
+}
+
+/* ===== Video Exercise Card (Active Workout) ===== */
+.video-exercise-card {
+    transition: border-color var(--transition-fast);
+}
+
+.video-exercise-card.video-done {
+    border-color: var(--success);
+    box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.15);
+}
+
+.video-exercise-thumb {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--bg-input);
+    cursor: pointer;
+    margin-bottom: var(--space-2);
+}
+
+.video-exercise-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.video-exercise-play {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.55);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    backdrop-filter: blur(6px);
+    transition: transform var(--transition-fast);
+}
+
+.video-exercise-thumb:active .video-exercise-play {
+    transform: translate(-50%, -50%) scale(0.9);
+}
+
+.video-exercise-info {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: var(--space-1);
+}
+
+/* ===== Video Player Landscape ===== */
+@media (orientation: landscape) and (max-height: 500px) {
+    .video-player-modal {
+        flex-direction: row;
+        overflow: hidden;
+    }
+
+    .video-player-header {
+        position: absolute;
+        top: 0;
+        right: 0;
+        z-index: 10;
+        padding: var(--space-2);
+    }
+
+    .video-player-embed {
+        width: 100%;
+        height: 100%;
+        aspect-ratio: auto;
+    }
+
+    .video-player-info,
+    .video-player-actions {
+        display: none;
+    }
+}
+
+/* ===== Custom Exercise Edit Button ===== */
+.exercise-edit-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 14px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.exercise-edit-btn:active {
+    color: var(--accent-light);
+}
+
+.edit-form-inline {
+    padding: var(--space-3) var(--space-4);
+    background: var(--bg-card);
+    border: 1px solid var(--border-accent);
+    border-radius: var(--radius-md);
+    margin-top: var(--space-1);
+    animation: slideDown 0.15s ease;
 }

@@ -1,74 +1,10 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
-import VideoPlayer from '../components/VideoPlayer'
+import { useRef } from 'react'
 
-const BASE = './fixfit/'
-
-function getCompletedVideos() {
-    try {
-        return JSON.parse(localStorage.getItem('gymtrack_completed_videos') || '[]')
-    } catch { return [] }
-}
-
-function markCompleted(ytId) {
-    const completed = getCompletedVideos()
-    if (!completed.includes(ytId)) {
-        completed.push(ytId)
-        localStorage.setItem('gymtrack_completed_videos', JSON.stringify(completed))
-    }
-    return [...completed]
-}
-
-export default function Home({ stats, todayWorkout, onStartWorkout, onResumeWorkout, onExport, onImport, theme, onToggleTheme, onLogVideo }) {
+export default function Home({ stats, todayWorkout, onStartWorkout, onResumeWorkout, onExport, onImport, theme, onToggleTheme }) {
     const today = new Date()
     const dayNames = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato']
     const monthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
         'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre']
-
-    const [latestVideos, setLatestVideos] = useState([])
-    const [categories, setCategories] = useState([])
-    const [categoryVideos, setCategoryVideos] = useState({})
-    const [completedVideos, setCompletedVideos] = useState(getCompletedVideos)
-    const [selectedVideo, setSelectedVideo] = useState(null)
-    const loadedCats = useRef(new Set())
-
-    // Load index + latest on mount
-    useEffect(() => {
-        // Load latest videos for the hero carousel
-        fetch(BASE + 'latest.json')
-            .then(r => r.ok ? r.json() : [])
-            .then(data => setLatestVideos(data))
-            .catch(() => {
-                // Fallback to old single file
-                fetch('./fixfit-catalog.json')
-                    .then(r => r.ok ? r.json() : [])
-                    .then(data => setLatestVideos(data.slice(0, 30)))
-                    .catch(() => setLatestVideos([]))
-            })
-
-        // Load category index
-        fetch(BASE + 'index.json')
-            .then(r => r.ok ? r.json() : [])
-            .then(data => setCategories(data))
-            .catch(() => setCategories([]))
-    }, [])
-
-    // Lazy load category videos when a category becomes visible
-    const loadCategory = useCallback((slug, file) => {
-        if (loadedCats.current.has(slug)) return
-        loadedCats.current.add(slug)
-
-        fetch(BASE + file)
-            .then(r => r.ok ? r.json() : [])
-            .then(data => {
-                setCategoryVideos(prev => ({ ...prev, [slug]: data }))
-            })
-            .catch(() => { })
-    }, [])
-
-    const handleComplete = useCallback((video) => {
-        setCompletedVideos(markCompleted(video.yt))
-        if (onLogVideo) onLogVideo(video)
-    }, [onLogVideo])
 
     return (
         <div className="page">
@@ -137,39 +73,8 @@ export default function Home({ stats, todayWorkout, onStartWorkout, onResumeWork
                 </button>
             )}
 
-            {/* Follow Along — Latest */}
-            {latestVideos.length > 0 && (
-                <div className="video-section">
-                    <div className="video-section-header">
-                        <div className="video-section-title">📺 Follow Along</div>
-                    </div>
-                    <div className="video-carousel">
-                        {latestVideos.map(v => (
-                            <VideoCard
-                                key={v.yt}
-                                video={v}
-                                isCompleted={completedVideos.includes(v.yt)}
-                                onClick={() => setSelectedVideo(v)}
-                            />
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {/* Category carousels — loaded progressively */}
-            {categories.map(cat => (
-                <LazyCategory
-                    key={cat.slug}
-                    category={cat}
-                    videos={categoryVideos[cat.slug]}
-                    completedVideos={completedVideos}
-                    onLoad={() => loadCategory(cat.slug, cat.file)}
-                    onSelectVideo={setSelectedVideo}
-                />
-            ))}
-
             {/* Motivation card */}
-            <div className="motivation-card">
+            <div className="motivation-card" style={{ marginTop: 'var(--space-2)' }}>
                 <div className="motivation-card-title">
                     {stats.totalWorkouts === 0
                         ? 'Inizia il tuo percorso'
@@ -201,82 +106,6 @@ export default function Home({ stats, todayWorkout, onStartWorkout, onResumeWork
                         </svg>
                         Importa
                     </button>
-                </div>
-            </div>
-
-            {/* Video Player Modal */}
-            {selectedVideo && (
-                <VideoPlayer
-                    video={selectedVideo}
-                    onClose={() => setSelectedVideo(null)}
-                    onComplete={handleComplete}
-                    isCompleted={completedVideos.includes(selectedVideo.yt)}
-                />
-            )}
-        </div>
-    )
-}
-
-// Lazy-loading category carousel — loads JSON when scrolled into view
-function LazyCategory({ category, videos, completedVideos, onLoad, onSelectVideo }) {
-    const ref = useRef(null)
-
-    useEffect(() => {
-        if (!ref.current) return
-        const observer = new IntersectionObserver(
-            ([entry]) => { if (entry.isIntersecting) { onLoad(); observer.disconnect(); } },
-            { rootMargin: '200px' }
-        )
-        observer.observe(ref.current)
-        return () => observer.disconnect()
-    }, [onLoad])
-
-    const displayVideos = videos ? videos.slice(0, 20) : []
-
-    return (
-        <div className="video-section" ref={ref}>
-            <div className="video-section-header">
-                <div className="video-section-title">{category.name}</div>
-                {category.count > 0 && (
-                    <span className="video-section-count">{category.count} video</span>
-                )}
-            </div>
-            {!videos ? (
-                <div className="video-carousel">
-                    {[1, 2, 3].map(i => <div key={i} className="video-card video-card-skeleton" />)}
-                </div>
-            ) : (
-                <div className="video-carousel">
-                    {displayVideos.map(v => (
-                        <VideoCard
-                            key={v.yt}
-                            video={{ ...v, cat: category.name }}
-                            isCompleted={completedVideos.includes(v.yt)}
-                            onClick={() => onSelectVideo({ ...v, cat: category.name })}
-                        />
-                    ))}
-                </div>
-            )}
-        </div>
-    )
-}
-
-function VideoCard({ video, isCompleted, onClick }) {
-    const thumb = `https://img.youtube.com/vi/${video.yt}/mqdefault.jpg`
-
-    return (
-        <div className="video-card" onClick={onClick}>
-            <div className="video-card-thumb">
-                <img src={thumb} alt="" loading="lazy" />
-                {video.dur && <div className="video-card-duration">{video.dur}</div>}
-                {isCompleted && <div className="video-card-completed">✓</div>}
-            </div>
-            <div className="video-card-body">
-                <div className="video-card-title">{video.title}</div>
-                <div className="video-card-meta">
-                    {video.kcal > 0 && <span className="video-badge">🔥 {video.kcal}</span>}
-                    {video.lvl && <span className="video-badge lvl">{video.lvl}</span>}
-                    {video.cat && <span className="video-badge cat">{video.cat}</span>}
                 </div>
             </div>
         </div>

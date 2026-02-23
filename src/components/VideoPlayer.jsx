@@ -1,7 +1,24 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export default function VideoPlayer({ video, onClose, onComplete, isCompleted }) {
     const [showPlayer, setShowPlayer] = useState(false)
+
+    // Request landscape when video plays
+    useEffect(() => {
+        if (!showPlayer) return
+        let locked = false
+        try {
+            const orientation = screen.orientation
+            if (orientation?.lock) {
+                orientation.lock('landscape').then(() => { locked = true }).catch(() => { })
+            }
+        } catch { }
+        return () => {
+            if (locked) {
+                try { screen.orientation.unlock() } catch { }
+            }
+        }
+    }, [showPlayer])
 
     if (!video) return null
 
