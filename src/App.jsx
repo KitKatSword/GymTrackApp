@@ -6,7 +6,6 @@ import RestTimerBar from './components/RestTimerBar'
 import Home from './pages/Home'
 import ActiveWorkout from './pages/ActiveWorkout'
 import HistoryCalendar from './pages/HistoryCalendar'
-import ExerciseLibrary from './pages/ExerciseLibrary'
 import Routines from './pages/Routines'
 import { exportAllData, importAllData } from './data/exercises'
 
@@ -56,7 +55,6 @@ const TABS = [
     { id: 'workout', label: 'Workout', icon: NavIcons.workout },
     { id: 'routines', label: 'Routine', icon: NavIcons.routines },
     { id: 'history', label: 'Storico', icon: NavIcons.history },
-    { id: 'exercises', label: 'Esercizi', icon: NavIcons.exercises },
 ]
 
 export default function App() {
@@ -86,7 +84,7 @@ export default function App() {
     const routineActions = useRoutines()
 
     const {
-        workouts, createWorkout, createWorkoutFromRoutine, finishWorkout, deleteWorkout,
+        workouts, createWorkout, createWorkoutFromRoutine, logVideoWorkout, finishWorkout, deleteWorkout,
         addExercise, removeExercise, addSet, removeSet, updateSet,
         toggleSetComplete, duplicateWorkout, getTodayWorkout, getStats,
     } = workoutActions
@@ -162,6 +160,7 @@ export default function App() {
                     onImport={() => importRef.current?.click()}
                     theme={theme}
                     onToggleTheme={toggleTheme}
+                    onLogVideo={logVideoWorkout}
                 />
             )}
 
@@ -199,9 +198,6 @@ export default function App() {
                 />
             )}
 
-            {activeTab === 'exercises' && (
-                <ExerciseLibrary />
-            )}
 
             {/* Hidden file input for import */}
             <input

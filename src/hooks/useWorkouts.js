@@ -73,6 +73,38 @@ export default function useWorkouts() {
         return workout
     }, [])
 
+    // Log a completed Fixfit follow-along video as a workout entry
+    const logVideoWorkout = useCallback((video) => {
+        const now = new Date()
+        const timeStr = now.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
+        const workout = {
+            id: generateId(),
+            date: now.toISOString().split('T')[0],
+            startTime: timeStr,
+            startTimestamp: now.getTime(),
+            endTime: timeStr,
+            isVideoWorkout: true,
+            exercises: [{
+                id: generateId(),
+                name: video.title,
+                emoji: '📺',
+                category: video.cat || 'Video',
+                params: ['duration'],
+                isVideo: true,
+                videoYt: video.yt,
+                videoDuration: video.dur || '',
+                videoKcal: video.kcal || 0,
+                sets: [{
+                    id: generateId(),
+                    completed: true,
+                    duration: video.dur || '',
+                }],
+            }],
+        }
+        setWorkouts(prev => [workout, ...prev])
+        return workout
+    }, [])
+
     const finishWorkout = useCallback((workoutId) => {
         setWorkouts(prev => prev.map(w =>
             w.id === workoutId
@@ -271,6 +303,7 @@ export default function useWorkouts() {
         workouts,
         createWorkout,
         createWorkoutFromRoutine,
+        logVideoWorkout,
         finishWorkout,
         deleteWorkout,
         addExercise,

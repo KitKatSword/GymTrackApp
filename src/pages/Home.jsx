@@ -1,8 +1,54 @@
-export default function Home({ stats, todayWorkout, onStartWorkout, onResumeWorkout, onExport, onImport, theme, onToggleTheme }) {
+import { useState, useEffect, useCallback } from 'react'
+import VideoPlayer from '../components/VideoPlayer'
+
+function getCompletedVideos() {
+    try {
+        return JSON.parse(localStorage.getItem('gymtrack_completed_videos') || '[]')
+    } catch { return [] }
+}
+
+function markCompleted(ytId) {
+    const completed = getCompletedVideos()
+    if (!completed.includes(ytId)) {
+        completed.push(ytId)
+        localStorage.setItem('gymtrack_completed_videos', JSON.stringify(completed))
+    }
+    return [...completed]
+}
+
+export default function Home({ stats, todayWorkout, onStartWorkout, onResumeWorkout, onExport, onImport, theme, onToggleTheme, onLogVideo }) {
     const today = new Date()
     const dayNames = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato']
     const monthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
         'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre']
+
+    const [videos, setVideos] = useState([])
+    const [completedVideos, setCompletedVideos] = useState(getCompletedVideos)
+    const [selectedVideo, setSelectedVideo] = useState(null)
+
+    useEffect(() => {
+        fetch('./fixfit-catalog.json')
+            .then(r => r.ok ? r.json() : [])
+            .then(data => setVideos(data))
+            .catch(() => setVideos([]))
+    }, [])
+
+    const handleComplete = useCallback((video) => {
+        // Mark in the video feed (localStorage)
+        setCompletedVideos(markCompleted(video.yt))
+        // Log as a real workout in the history system
+        if (onLogVideo) onLogVideo(video)
+    }, [onLogVideo])
+
+    // Latest 20 videos for carousel
+    const latestVideos = videos.slice(0, 20)
+
+    // Group by popular categories for additional rows
+    const categories = ['Total Body', 'HIIT', 'Gambe e Glutei', 'Addominali']
+    const videosByCategory = {}
+    categories.forEach(cat => {
+        videosByCategory[cat] = videos.filter(v => v.cat === cat).slice(0, 15)
+    })
 
     return (
         <div className="page">
@@ -71,6 +117,48 @@ export default function Home({ stats, todayWorkout, onStartWorkout, onResumeWork
                 </button>
             )}
 
+            {/* Follow Along — Latest */}
+            {latestVideos.length > 0 && (
+                <div className="video-section">
+                    <div className="video-section-header">
+                        <div className="video-section-title">📺 Follow Along</div>
+                    </div>
+                    <div className="video-carousel">
+                        {latestVideos.map(v => (
+                            <VideoCard
+                                key={v.yt}
+                                video={v}
+                                isCompleted={completedVideos.includes(v.yt)}
+                                onClick={() => setSelectedVideo(v)}
+                            />
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Category carousels */}
+            {categories.map(cat => {
+                const catVideos = videosByCategory[cat]
+                if (!catVideos || catVideos.length === 0) return null
+                return (
+                    <div className="video-section" key={cat}>
+                        <div className="video-section-header">
+                            <div className="video-section-title">{cat}</div>
+                        </div>
+                        <div className="video-carousel">
+                            {catVideos.map(v => (
+                                <VideoCard
+                                    key={v.yt}
+                                    video={v}
+                                    isCompleted={completedVideos.includes(v.yt)}
+                                    onClick={() => setSelectedVideo(v)}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                )
+            })}
+
             {/* Motivation card */}
             <div className="motivation-card">
                 <div className="motivation-card-title">
@@ -104,6 +192,38 @@ export default function Home({ stats, todayWorkout, onStartWorkout, onResumeWork
                         </svg>
                         Importa
                     </button>
+                </div>
+            </div>
+
+            {/* Video Player Modal */}
+            {selectedVideo && (
+                <VideoPlayer
+                    video={selectedVideo}
+                    onClose={() => setSelectedVideo(null)}
+                    onComplete={handleComplete}
+                    isCompleted={completedVideos.includes(selectedVideo.yt)}
+                />
+            )}
+        </div>
+    )
+}
+
+function VideoCard({ video, isCompleted, onClick }) {
+    const thumb = `https://img.youtube.com/vi/${video.yt}/mqdefault.jpg`
+
+    return (
+        <div className="video-card" onClick={onClick}>
+            <div className="video-card-thumb">
+                <img src={thumb} alt="" loading="lazy" />
+                {video.dur && <div className="video-card-duration">{video.dur}</div>}
+                {isCompleted && <div className="video-card-completed">✓</div>}
+            </div>
+            <div className="video-card-body">
+                <div className="video-card-title">{video.title}</div>
+                <div className="video-card-meta">
+                    {video.kcal > 0 && <span className="video-badge">🔥 {video.kcal}</span>}
+                    {video.lvl && <span className="video-badge lvl">{video.lvl}</span>}
+                    <span className="video-badge cat">{video.cat}</span>
                 </div>
             </div>
         </div>
