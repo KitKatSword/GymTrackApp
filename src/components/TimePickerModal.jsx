@@ -1,61 +1,55 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 
 const ITEM_H = 44
-const VISIBLE = 3  // show 3 items: top, center, bottom
-
-// Build a looping list: [... original ... original ... original ...]
-function buildLoop(arr) {
-    return [...arr, ...arr, ...arr]
-}
 
 function InfiniteWheel({ items, value, onChange, format }) {
     const ref = useRef(null)
-    const isScrollingRef = useRef(false)
-    const timeoutRef = useRef(null)
-
-    const looped = buildLoop(items)
+    const isJumping = useRef(false)
     const blockSize = items.length
-    const centerStart = blockSize // start of center block
 
-    // Find value's index within original array
+    // Build: [... items ... items ... items ...]
+    const looped = [...items, ...items, ...items]
+    const centerStart = blockSize
+
+    // Initial scroll position
     const valueIndex = items.indexOf(value)
-    const initialScroll = (centerStart + (valueIndex >= 0 ? valueIndex : 0)) * ITEM_H
+    const initialIndex = centerStart + (valueIndex >= 0 ? valueIndex : 0)
 
     useEffect(() => {
         if (ref.current) {
-            ref.current.scrollTop = initialScroll
+            ref.current.style.scrollBehavior = 'auto'
+            ref.current.scrollTop = initialIndex * ITEM_H
         }
         // eslint-disable-next-line
     }, [])
 
-    const recenter = useCallback(() => {
-        if (!ref.current) return
+    const handleScroll = useCallback(() => {
         const el = ref.current
-        const idx = Math.round(el.scrollTop / ITEM_H)
+        if (!el || isJumping.current) return
 
-        // If scrolled into top block, jump to center
-        if (idx < blockSize) {
-            el.scrollTop += blockSize * ITEM_H
-        }
-        // If scrolled into bottom block, jump to center
-        else if (idx >= blockSize * 2) {
-            el.scrollTop -= blockSize * ITEM_H
-        }
-    }, [blockSize])
-
-    const handleScroll = () => {
-        if (!ref.current) return
-        const idx = Math.round(ref.current.scrollTop / ITEM_H)
-        const realIdx = ((idx % blockSize) + blockSize) % blockSize
+        const scrollIdx = Math.round(el.scrollTop / ITEM_H)
+        const realIdx = ((scrollIdx % blockSize) + blockSize) % blockSize
         const newVal = items[realIdx]
+
         if (newVal !== undefined && newVal !== value) {
             onChange(newVal)
         }
 
-        // Debounce recenter
-        clearTimeout(timeoutRef.current)
-        timeoutRef.current = setTimeout(recenter, 150)
-    }
+        // Recenter instantly if scrolled into edge blocks
+        if (scrollIdx < blockSize - 1 || scrollIdx >= blockSize * 2) {
+            isJumping.current = true
+            // Jump to equivalent position in center block
+            const targetScroll = (centerStart + realIdx) * ITEM_H
+            el.style.scrollBehavior = 'auto'
+            el.scrollTop = targetScroll
+            // Re-enable after browser paints
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    isJumping.current = false
+                })
+            })
+        }
+    }, [items, blockSize, centerStart, value, onChange])
 
     return (
         <div
@@ -82,8 +76,8 @@ export default function TimePickerModal({ initialSeconds, onClose, onSave }) {
     const [mins, setMins] = useState(Math.floor(initialSeconds / 60))
     const [secs, setSecs] = useState(initialSeconds % 60)
 
-    const minutesList = Array.from({ length: 16 }, (_, i) => i)         // 0-15
-    const secondsList = Array.from({ length: 12 }, (_, i) => i * 5)     // 0,5,10,...55
+    const minutesList = Array.from({ length: 16 }, (_, i) => i)
+    const secondsList = Array.from({ length: 12 }, (_, i) => i * 5)
 
     // Snap secs to nearest 5 on init
     const snappedSecs = secondsList.reduce((prev, curr) =>
@@ -97,7 +91,6 @@ export default function TimePickerModal({ initialSeconds, onClose, onSave }) {
                 <div className="time-picker-title">Imposta Timer</div>
 
                 <div className="time-picker-wheels">
-                    {/* Highlight bar */}
                     <div className="time-picker-highlight" />
 
                     <InfiniteWheel
