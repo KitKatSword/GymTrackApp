@@ -6,7 +6,7 @@ import RestTimerBar from './components/RestTimerBar'
 import Home from './pages/Home'
 import ActiveWorkout from './pages/ActiveWorkout'
 import HistoryCalendar from './pages/HistoryCalendar'
-import Routines from './pages/Routines'
+import WorkoutTab from './pages/WorkoutTab'
 import VideoLibrary from './pages/VideoLibrary'
 import { exportAllData, importAllData } from './data/exercises'
 
@@ -59,8 +59,7 @@ const NavIcons = {
 
 const TABS = [
     { id: 'home', label: 'Home', icon: NavIcons.home },
-    { id: 'workout', label: 'Workout', icon: NavIcons.workout },
-    { id: 'routines', label: 'Routine', icon: NavIcons.routines },
+    { id: 'workout', label: 'Allenamento', icon: NavIcons.workout },
     { id: 'video', label: 'Libreria', icon: NavIcons.video },
     { id: 'history', label: 'Storico', icon: NavIcons.history },
 ]
@@ -105,7 +104,7 @@ export default function App() {
         const w = createWorkout()
         setActiveWorkoutId(w.id)
         localStorage.setItem('gymtrack_active_workout', w.id)
-        setActiveTab('workout')
+        setActiveTab('active-workout')
     }, [createWorkout])
 
     const handleResumeWorkout = useCallback(() => {
@@ -113,7 +112,7 @@ export default function App() {
             setActiveWorkoutId(todayWorkout.id)
             localStorage.setItem('gymtrack_active_workout', todayWorkout.id)
         }
-        setActiveTab('workout')
+        setActiveTab('active-workout')
     }, [todayWorkout])
 
     const handleFinishWorkout = useCallback((id) => {
@@ -129,7 +128,7 @@ export default function App() {
         if (w) {
             setActiveWorkoutId(w.id)
             localStorage.setItem('gymtrack_active_workout', w.id)
-            setActiveTab('workout')
+            setActiveTab('active-workout')
         }
     }, [duplicateWorkout])
 
@@ -137,7 +136,7 @@ export default function App() {
         const w = createWorkoutFromRoutine(routine)
         setActiveWorkoutId(w.id)
         localStorage.setItem('gymtrack_active_workout', w.id)
-        setActiveTab('workout')
+        setActiveTab('active-workout')
     }, [createWorkoutFromRoutine])
 
     const handleExport = useCallback(() => {
@@ -170,7 +169,7 @@ export default function App() {
                 />
             )}
 
-            {activeTab === 'workout' && (
+            {activeTab === 'active-workout' && (
                 <ActiveWorkout
                     workout={activeWorkout}
                     timer={timer}
@@ -183,16 +182,18 @@ export default function App() {
                     onUpdateNotes={workoutActions.updateWorkoutNotes}
                     onUpdateExerciseNotes={workoutActions.updateExerciseNotes}
                     onFinish={handleFinishWorkout}
-                    onGoHome={() => setActiveTab('home')}
+                    onGoBack={() => setActiveTab('workout')}
+                    onCreateRoutine={routineActions.createRoutine}
                 />
             )}
 
-            {activeTab === 'routines' && (
-                <Routines
+            {activeTab === 'workout' && (
+                <WorkoutTab
                     routines={routineActions.routines}
                     onCreateRoutine={routineActions.createRoutine}
                     onDeleteRoutine={routineActions.deleteRoutine}
                     onStartFromRoutine={handleStartFromRoutine}
+                    onStartEmpty={handleStartWorkout}
                     onLogVideo={logVideoWorkout}
                 />
             )}

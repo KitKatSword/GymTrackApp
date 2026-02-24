@@ -210,9 +210,20 @@ function WorkoutCard({ w, expandedId, setExpandedId, setDeleteConfirm, onDuplica
 
             {isExpanded && (
                 <div className="history-expanded">
+                    {w.notes && (
+                        <div style={{ marginBottom: 12, padding: '8px 12px', background: 'var(--bg-input)', borderRadius: 'var(--radius-md)', fontSize: 'var(--text-sm)' }}>
+                            <div style={{ fontWeight: 700, marginBottom: 4, color: 'var(--text-secondary)' }}>Note Allenamento:</div>
+                            <div style={{ color: 'var(--text-primary)', fontStyle: 'italic' }}>{w.notes}</div>
+                        </div>
+                    )}
                     {w.exercises.map(ex => (
                         <div key={ex.id} style={{ marginBottom: 10 }}>
                             <div className="history-exercise-name">{ex.name}</div>
+                            {ex.notes && (
+                                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: 4, fontStyle: 'italic' }}>
+                                    Nota: {ex.notes}
+                                </div>
+                            )}
                             <div className="history-exercise-sets">
                                 <ParamParts ex={ex} />
                             </div>

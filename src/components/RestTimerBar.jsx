@@ -16,7 +16,7 @@ export default function RestTimerBar({ timer }) {
   const fillPct = Math.max(0, Math.min(100, (1 - progress) * 100));
 
   return (
-    <div className="rest-timer-bar">
+    <div className={`rest-timer-bar ${isFinished ? "timer-finished-glow" : ""}`}>
       {/* Progress line at top */}
       <div className="rest-timer-bar-progress">
         <div
@@ -32,7 +32,7 @@ export default function RestTimerBar({ timer }) {
       <div style={{ flex: 1, minWidth: 0 }}>
         {label && <div className="rest-timer-label">{label}</div>}
         <div className={`rest-timer-time ${isFinished ? "finished" : ""}`}>
-          {isFinished ? "Vai!" : formatTime(remaining)}
+          {formatTime(remaining)}
         </div>
       </div>
 

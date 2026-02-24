@@ -65,7 +65,7 @@ export default function Home({ stats, todayWorkout, onStartWorkout, onResumeWork
                 </div>
             ) : (
                 <button
-                    className="btn btn-primary btn-full btn-lg"
+                    className="btn btn-start-workout btn-full"
                     onClick={onStartWorkout}
                     style={{ marginBottom: 'var(--space-4)' }}
                 >

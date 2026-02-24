@@ -15,7 +15,8 @@ export default function ActiveWorkout({
   onUpdateNotes,
   onUpdateExerciseNotes,
   onFinish,
-  onGoHome,
+  onGoBack,
+  onCreateRoutine,
 }) {
   const [showSearch, setShowSearch] = useState(false);
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
@@ -23,6 +24,8 @@ export default function ActiveWorkout({
   const [paused, setPaused] = useState(false);
   const [activeRestSetId, setActiveRestSetId] = useState(null);
   const [localSessionNotes, setLocalSessionNotes] = useState(workout?.notes || '');
+  const [saveAsRoutine, setSaveAsRoutine] = useState(false);
+  const [routineName, setRoutineName] = useState('');
   const pausedAtRef = useRef(0);
   const pausedAccRef = useRef(0);
 
@@ -100,8 +103,8 @@ export default function ActiveWorkout({
           <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginBottom: 20 }}>
             Inizia un allenamento dalla Home
           </p>
-          <button className="btn btn-secondary" onClick={onGoHome}>
-            Home
+          <button className="btn btn-secondary" onClick={onGoBack}>
+            Indietro
           </button>
         </div>
       </div>
@@ -115,10 +118,24 @@ export default function ActiveWorkout({
 
   return (
     <div className={`page ${timer.isActive ? "has-rest-bar" : ""}`}>
+      {/* Header Secondary Interface */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+        <button
+          className="btn btn-ghost"
+          style={{ padding: '0 var(--space-2)', minHeight: 40 }}
+          onClick={onGoBack}
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+        <div className="page-title" style={{ fontSize: 'var(--text-xl)' }}>Allenamento Attivo</div>
+      </div>
+
       {/* Status bar */}
       <div className="workout-status-bar">
         <div>
-          <div className="workout-status-label">Allenamento</div>
+          <div className="workout-status-label">Tempo</div>
           <div className={`workout-elapsed ${paused ? "paused" : ""}`}>
             {fmt(elapsed)}
             {paused ? " — Pausa" : ""}
@@ -140,7 +157,7 @@ export default function ActiveWorkout({
           </button>
 
           <button
-            className="btn btn-danger btn-sm"
+            className="btn btn-stop-workout btn-sm"
             onClick={() => setShowFinishConfirm(true)}
             style={{ minHeight: 36, padding: "0 14px", fontWeight: 700 }}
           >
@@ -220,7 +237,30 @@ export default function ActiveWorkout({
               {totalCompleted} serie completate · {workout.exercises.length}{" "}
               esercizi · {fmt(elapsed)}
             </div>
-            <div className="confirm-actions">
+
+            <div style={{ marginTop: 'var(--space-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--text-sm)', cursor: 'pointer', color: 'var(--text-primary)' }}>
+                <input
+                  type="checkbox"
+                  checked={saveAsRoutine}
+                  onChange={(e) => setSaveAsRoutine(e.target.checked)}
+                  style={{ width: 16, height: 16, accentColor: 'var(--accent)' }}
+                />
+                <span style={{ fontWeight: 500 }}>Salva come nuova routine</span>
+              </label>
+              {saveAsRoutine && (
+                <input
+                  type="text"
+                  className="input"
+                  placeholder="Nome routine (es. Workout di oggi)"
+                  value={routineName}
+                  onChange={(e) => setRoutineName(e.target.value)}
+                  style={{ padding: '8px 12px', fontSize: 'var(--text-sm)', marginTop: 4 }}
+                />
+              )}
+            </div>
+
+            <div className="confirm-actions" style={{ marginTop: 'var(--space-4)' }}>
               <button
                 className="btn btn-secondary"
                 onClick={() => setShowFinishConfirm(false)}
@@ -230,6 +270,10 @@ export default function ActiveWorkout({
               <button
                 className="btn btn-primary"
                 onClick={() => {
+                  if (saveAsRoutine) {
+                    const finalName = routineName.trim() || `Routine del ${new Date().toLocaleDateString()}`;
+                    if (onCreateRoutine) onCreateRoutine(finalName, workout.exercises);
+                  }
                   onFinish(workout.id);
                   setShowFinishConfirm(false);
                 }}
