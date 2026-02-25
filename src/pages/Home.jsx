@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 
-export default function Home({ stats, todayWorkout, onStartWorkout, onResumeWorkout, onExport, onImport, theme, onToggleTheme }) {
+export default function Home({ stats, activeWorkout, onStartWorkout, onResumeWorkout, onExport, onImport, theme, onToggleTheme }) {
     const today = new Date()
     const dayNames = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato']
     const monthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
@@ -45,19 +45,19 @@ export default function Home({ stats, todayWorkout, onStartWorkout, onResumeWork
             </div>
 
             {/* Active workout / start CTA */}
-            {todayWorkout ? (
+            {activeWorkout ? (
                 <div className="active-workout-card">
                     <div className="active-workout-card-header">
                         <div>
                             <div className="active-workout-card-title">Allenamento in corso</div>
                             <div className="active-workout-card-subtitle">
-                                Iniziato alle {todayWorkout.startTime}
+                                Iniziato alle {activeWorkout.startTime}
                             </div>
                         </div>
                         <div className="pulse-dot" />
                     </div>
                     <div className="active-workout-card-meta">
-                        {todayWorkout.exercises.length} esercizi · {todayWorkout.exercises.reduce((s, e) => s + e.sets.filter(st => st.completed).length, 0)} serie completate
+                        {activeWorkout.exercises.length} esercizi · {activeWorkout.exercises.reduce((s, e) => s + e.sets.filter(st => st.completed).length, 0)} serie completate
                     </div>
                     <button className="btn btn-primary btn-full" onClick={onResumeWorkout}>
                         Continua →

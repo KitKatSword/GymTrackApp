@@ -13,7 +13,17 @@ function abbr(name) {
     return (words[0][0] + words[1][0]).toUpperCase()
 }
 
-export default function WorkoutTab({ routines, onCreateRoutine, onDeleteRoutine, onUpdateRoutine, onStartFromRoutine, onStartEmpty, onLogVideo }) {
+export default function WorkoutTab({
+    routines,
+    hasActiveWorkout,
+    onResumeWorkout,
+    onCreateRoutine,
+    onDeleteRoutine,
+    onUpdateRoutine,
+    onStartFromRoutine,
+    onStartEmpty,
+    onLogVideo
+}) {
     const [showCreate, setShowCreate] = useState(false)
     const [routineName, setRoutineName] = useState('')
     const [routineColor, setRoutineColor] = useState(ROUTINE_COLORS[5])
@@ -69,13 +79,23 @@ export default function WorkoutTab({ routines, onCreateRoutine, onDeleteRoutine,
 
             {/* Quick Start Empty Workout */}
             {!showCreate && (
-                <button
-                    className="btn btn-start-workout btn-full"
-                    onClick={onStartEmpty}
-                    style={{ marginBottom: 'var(--space-6)' }}
-                >
-                    Inizia Allenamento Vuoto
-                </button>
+                hasActiveWorkout ? (
+                    <button
+                        className="btn btn-full"
+                        onClick={onResumeWorkout}
+                        style={{ marginBottom: 'var(--space-6)', backgroundColor: 'var(--success)', borderColor: 'var(--success)', color: 'white' }}
+                    >
+                        Riprendi Allenamento in Corso
+                    </button>
+                ) : (
+                    <button
+                        className="btn btn-start-workout btn-full"
+                        onClick={onStartEmpty}
+                        style={{ marginBottom: 'var(--space-6)' }}
+                    >
+                        Inizia Allenamento Vuoto
+                    </button>
+                )
             )}
 
             {/* Routines Section Header */}
@@ -205,8 +225,20 @@ export default function WorkoutTab({ routines, onCreateRoutine, onDeleteRoutine,
                                     </div>
                                     <button
                                         className="btn btn-primary btn-sm"
-                                        onClick={(e) => { e.stopPropagation(); onStartFromRoutine(routine) }}
-                                        style={{ minHeight: 34, padding: '0 14px' }}
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            if (hasActiveWorkout) {
+                                                alert("Hai già un allenamento in corso. Terminalo prima di iniziarne uno nuovo.")
+                                            } else {
+                                                onStartFromRoutine(routine)
+                                            }
+                                        }}
+                                        style={{
+                                            minHeight: 34,
+                                            padding: '0 14px',
+                                            opacity: hasActiveWorkout ? 0.5 : 1,
+                                            cursor: hasActiveWorkout ? 'not-allowed' : 'pointer'
+                                        }}
                                     >
                                         Inizia
                                     </button>

@@ -5,6 +5,14 @@ const MONTHS = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
     'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre']
 const MONTHS_SHORT = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic']
 
+function hexToRgba(hex, alpha) {
+    if (!hex || !hex.startsWith('#')) return `rgba(139, 92, 246, ${alpha})`; // Fallback to purple
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 function formatDate(ds) {
     const d = new Date(ds + 'T12:00:00')
     const days = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab']
@@ -120,11 +128,18 @@ export default function HistoryCalendar({ workouts, onDuplicate, onDelete }) {
                     const isToday = day.date === today
                     const isSelected = day.date === selectedDate
 
+                    let btnStyle = {};
+                    if (hasWorkout && !isSelected) {
+                        const firstColor = workoutsForDay[0].routineColor || '#8b5cf6';
+                        btnStyle.backgroundColor = hexToRgba(firstColor, 0.2);
+                    }
+
                     return (
                         <button
                             key={day.date}
                             onClick={() => setSelectedDate(day.date)}
                             className={`calendar-day-btn ${isToday ? 'today' : ''} ${hasWorkout && !isSelected ? 'has-workout' : ''} ${isSelected ? 'selected' : ''}`}
+                            style={btnStyle}
                         >
                             {day.day}
                             {hasWorkout && (

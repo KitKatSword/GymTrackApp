@@ -108,12 +108,15 @@ export default function App() {
     }, [createWorkout])
 
     const handleResumeWorkout = useCallback(() => {
-        if (todayWorkout) {
+        if (activeWorkout) {
+            setActiveWorkoutId(activeWorkout.id)
+            localStorage.setItem('gymtrack_active_workout', activeWorkout.id)
+        } else if (todayWorkout) {
             setActiveWorkoutId(todayWorkout.id)
             localStorage.setItem('gymtrack_active_workout', todayWorkout.id)
         }
         setActiveTab('active-workout')
-    }, [todayWorkout])
+    }, [activeWorkout, todayWorkout])
 
     const handleFinishWorkout = useCallback((id) => {
         finishWorkout(id)
@@ -160,7 +163,7 @@ export default function App() {
             {activeTab === 'home' && (
                 <Home
                     stats={stats}
-                    todayWorkout={todayWorkout || (activeWorkout?.endTime === null ? activeWorkout : null)}
+                    activeWorkout={activeWorkout || todayWorkout}
                     onStartWorkout={handleStartWorkout}
                     onResumeWorkout={handleResumeWorkout}
                     onImport={() => importRef.current?.click()}
@@ -172,6 +175,7 @@ export default function App() {
             {activeTab === 'active-workout' && (
                 <ActiveWorkout
                     workout={activeWorkout}
+                    routines={routineActions.routines}
                     timer={timer}
                     onAddExercise={addExercise}
                     onRemoveExercise={removeExercise}
@@ -189,6 +193,8 @@ export default function App() {
 
             {activeTab === 'workout' && (
                 <WorkoutTab
+                    hasActiveWorkout={!!activeWorkout || !!todayWorkout}
+                    onResumeWorkout={handleResumeWorkout}
                     routines={routineActions.routines}
                     onCreateRoutine={routineActions.createRoutine}
                     onDeleteRoutine={routineActions.deleteRoutine}
@@ -200,7 +206,11 @@ export default function App() {
             )}
 
             {activeTab === 'video' && (
-                <VideoLibrary onLogVideo={logVideoWorkout} />
+                <VideoLibrary
+                    hasActiveWorkout={!!activeWorkout || !!todayWorkout}
+                    onLogVideo={logVideoWorkout}
+                    onResumeWorkout={handleResumeWorkout}
+                />
             )}
 
             {activeTab === 'history' && (

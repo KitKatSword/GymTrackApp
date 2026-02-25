@@ -28,7 +28,7 @@ function markCompleted(video) {
     return [...completed]
 }
 
-export default function VideoLibrary({ onLogVideo }) {
+export default function VideoLibrary({ onLogVideo, hasActiveWorkout, onResumeWorkout }) {
     const [latestVideos, setLatestVideos] = useState([])
     const [categories, setCategories] = useState([])
     const [categoryVideos, setCategoryVideos] = useState({})
@@ -175,6 +175,8 @@ export default function VideoLibrary({ onLogVideo }) {
                     onClose={() => setSelectedVideo(null)}
                     onComplete={handleComplete}
                     isCompleted={completedIds.includes(selectedVideo.yt)}
+                    hasActiveWorkout={hasActiveWorkout}
+                    onResumeWorkout={onResumeWorkout}
                 />
             )}
         </div>

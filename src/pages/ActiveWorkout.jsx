@@ -5,6 +5,7 @@ import ExerciseSearch from "../components/ExerciseSearch";
 
 export default function ActiveWorkout({
   workout,
+  routines,
   timer,
   onAddExercise,
   onRemoveExercise,
@@ -115,6 +116,27 @@ export default function ActiveWorkout({
     (s, ex) => s + ex.sets.filter((st) => st.completed).length,
     0,
   );
+
+  const isWorkoutIdenticalToRoutine = (currentWorkout, existingRoutines) => {
+    if (!currentWorkout) return false;
+
+    // An empty workout shouldn't be saved as a new routine
+    if (!currentWorkout.exercises || currentWorkout.exercises.length === 0) return true;
+
+    // Safely check against routines
+    if (!existingRoutines || existingRoutines.length === 0) return false;
+
+    return existingRoutines.some(routine => {
+      if (!routine.exercises || routine.exercises.length !== currentWorkout.exercises.length) return false;
+
+      return routine.exercises.every((routineEx, index) => {
+        const workoutEx = currentWorkout.exercises[index];
+        return routineEx.exerciseId === workoutEx.exerciseId && routineEx.setsCount === workoutEx.sets.length;
+      });
+    });
+  };
+
+  const isIdentical = isWorkoutIdenticalToRoutine(workout, routines);
 
   return (
     <div className={`page ${timer.isActive ? "has-rest-bar" : ""}`}>
@@ -238,27 +260,29 @@ export default function ActiveWorkout({
               esercizi · {fmt(elapsed)}
             </div>
 
-            <div style={{ marginTop: 'var(--space-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--text-sm)', cursor: 'pointer', color: 'var(--text-primary)' }}>
-                <input
-                  type="checkbox"
-                  checked={saveAsRoutine}
-                  onChange={(e) => setSaveAsRoutine(e.target.checked)}
-                  style={{ width: 16, height: 16, accentColor: 'var(--accent)' }}
-                />
-                <span style={{ fontWeight: 500 }}>Salva come nuova routine</span>
-              </label>
-              {saveAsRoutine && (
-                <input
-                  type="text"
-                  className="input"
-                  placeholder="Nome routine (es. Workout di oggi)"
-                  value={routineName}
-                  onChange={(e) => setRoutineName(e.target.value)}
-                  style={{ padding: '8px 12px', fontSize: 'var(--text-sm)', marginTop: 4 }}
-                />
-              )}
-            </div>
+            {workout.exercises.length > 0 && !isIdentical && (
+              <div style={{ marginTop: 'var(--space-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--text-sm)', cursor: 'pointer', color: 'var(--text-primary)' }}>
+                  <input
+                    type="checkbox"
+                    checked={saveAsRoutine}
+                    onChange={(e) => setSaveAsRoutine(e.target.checked)}
+                    style={{ width: 16, height: 16, accentColor: 'var(--accent)' }}
+                  />
+                  <span style={{ fontWeight: 500 }}>Salva come nuova routine</span>
+                </label>
+                {saveAsRoutine && (
+                  <input
+                    type="text"
+                    className="input"
+                    placeholder="Nome routine (es. Workout di oggi)"
+                    value={routineName}
+                    onChange={(e) => setRoutineName(e.target.value)}
+                    style={{ padding: '8px 12px', fontSize: 'var(--text-sm)', marginTop: 4 }}
+                  />
+                )}
+              </div>
+            )}
 
             <div className="confirm-actions" style={{ marginTop: 'var(--space-4)' }}>
               <button
