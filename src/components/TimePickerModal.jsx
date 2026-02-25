@@ -2,54 +2,101 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 
 const ITEM_H = 44
 
-function InfiniteWheel({ items, value, onChange, format }) {
+function WheelColumn({ items, value, onChange, format }) {
     const ref = useRef(null)
-    const isJumping = useRef(false)
+    const scrollTimer = useRef(null)
+    const lastEmitted = useRef(value)
+    const isCentering = useRef(false)
     const blockSize = items.length
 
-    // Build: [... items ... items ... items ...]
-    const looped = [...items, ...items, ...items]
-    const centerStart = blockSize
+    // 5 copies → plenty of buffer so user never sees emptiness
+    const copies = 5
+    const looped = Array.from({ length: copies }, () => items).flat()
+    const centerBlock = Math.floor(copies / 2) // block index 2
 
-    // Initial scroll position
-    const valueIndex = items.indexOf(value)
-    const initialIndex = centerStart + (valueIndex >= 0 ? valueIndex : 0)
+    const scrollForValue = (v) => {
+        const idx = items.indexOf(v)
+        return (centerBlock * blockSize + (idx >= 0 ? idx : 0)) * ITEM_H
+    }
 
+    // Initial position
     useEffect(() => {
-        if (ref.current) {
-            ref.current.style.scrollBehavior = 'auto'
-            ref.current.scrollTop = initialIndex * ITEM_H
-        }
+        const el = ref.current
+        if (!el) return
+        el.scrollTop = scrollForValue(value)
         // eslint-disable-next-line
     }, [])
 
-    const handleScroll = useCallback(() => {
-        const el = ref.current
-        if (!el || isJumping.current) return
+    // Sync if parent changes value
+    useEffect(() => {
+        if (ref.current && !scrollTimer.current) {
+            ref.current.scrollTop = scrollForValue(value)
+        }
+        // eslint-disable-next-line
+    }, [value])
 
-        const scrollIdx = Math.round(el.scrollTop / ITEM_H)
-        const realIdx = ((scrollIdx % blockSize) + blockSize) % blockSize
+    // Snap to nearest item and emit value
+    const snapAndEmit = useCallback(() => {
+        const el = ref.current
+        if (!el) return
+
+        const rawIdx = Math.round(el.scrollTop / ITEM_H)
+        const realIdx = ((rawIdx % blockSize) + blockSize) % blockSize
         const newVal = items[realIdx]
 
-        if (newVal !== undefined && newVal !== value) {
+        // Snap to precise item boundary
+        const snapTarget = rawIdx * ITEM_H
+        if (Math.abs(el.scrollTop - snapTarget) > 1) {
+            el.scrollTo({ top: snapTarget, behavior: 'smooth' })
+        }
+
+        // Emit change
+        if (newVal !== undefined && newVal !== lastEmitted.current) {
+            lastEmitted.current = newVal
             onChange(newVal)
         }
 
-        // Recenter instantly if scrolled into edge blocks
-        if (scrollIdx < blockSize - 1 || scrollIdx >= blockSize * 2) {
-            isJumping.current = true
-            // Jump to equivalent position in center block
-            const targetScroll = (centerStart + realIdx) * ITEM_H
-            el.style.scrollBehavior = 'auto'
-            el.scrollTop = targetScroll
-            // Re-enable after browser paints
+        // Recenter to middle block after snap settles
+        setTimeout(() => {
+            if (!ref.current) return
+            isCentering.current = true
+            const curIdx = Math.round(ref.current.scrollTop / ITEM_H)
+            const rIdx = ((curIdx % blockSize) + blockSize) % blockSize
+            ref.current.scrollTop = (centerBlock * blockSize + rIdx) * ITEM_H
             requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    isJumping.current = false
-                })
+                isCentering.current = false
             })
+        }, 100)
+
+        scrollTimer.current = null
+    }, [items, blockSize, centerBlock, onChange])
+
+    const handleScroll = useCallback(() => {
+        if (isCentering.current) return
+
+        const el = ref.current
+        if (!el) return
+
+        // Safety: if near edges (block 0 or last block), recenter instantly
+        const rawIdx = Math.round(el.scrollTop / ITEM_H)
+        if (rawIdx < blockSize || rawIdx >= blockSize * (copies - 1)) {
+            isCentering.current = true
+            const realIdx = ((rawIdx % blockSize) + blockSize) % blockSize
+            el.scrollTop = (centerBlock * blockSize + realIdx) * ITEM_H
+            requestAnimationFrame(() => {
+                isCentering.current = false
+            })
+            return
         }
-    }, [items, blockSize, centerStart, value, onChange])
+
+        // Debounce snap
+        clearTimeout(scrollTimer.current)
+        scrollTimer.current = setTimeout(snapAndEmit, 80)
+    }, [snapAndEmit, blockSize, centerBlock, copies])
+
+    useEffect(() => {
+        return () => clearTimeout(scrollTimer.current)
+    }, [])
 
     return (
         <div
@@ -93,7 +140,7 @@ export default function TimePickerModal({ initialSeconds, onClose, onSave }) {
                 <div className="time-picker-wheels">
                     <div className="time-picker-highlight" />
 
-                    <InfiniteWheel
+                    <WheelColumn
                         items={minutesList}
                         value={mins}
                         onChange={setMins}
@@ -101,7 +148,7 @@ export default function TimePickerModal({ initialSeconds, onClose, onSave }) {
 
                     <div className="time-picker-colon">:</div>
 
-                    <InfiniteWheel
+                    <WheelColumn
                         items={secondsList}
                         value={secs}
                         onChange={setSecs}

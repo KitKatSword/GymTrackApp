@@ -5,7 +5,6 @@ export default function RestTimerBar({ timer }) {
     isFinished,
     remaining,
     duration,
-    label,
     progress,
     dismiss,
     formatTime,
@@ -28,38 +27,36 @@ export default function RestTimerBar({ timer }) {
         />
       </div>
 
-      {/* Label + time */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        {label && <div className="rest-timer-label">{label}</div>}
+      {/* Main row: -15 | TIME | +15 */}
+      <div className="rest-timer-main-row">
+        <button
+          className="rest-timer-adjust-btn"
+          onClick={() => timer.adjust(-15)}
+        >
+          <span className="rest-timer-adjust-icon">−</span>
+          <span className="rest-timer-adjust-label">15s</span>
+        </button>
+
         <div className={`rest-timer-time ${isFinished ? "finished" : ""}`}>
           {formatTime(remaining)}
         </div>
-      </div>
-
-      {/* Controls */}
-      <div style={{ display: "flex", gap: 8, flexShrink: 0, alignItems: "center" }}>
-        <button
-          className="rest-timer-control-btn"
-          onClick={() => timer.adjust(-15)}
-        >
-          -15
-        </button>
 
         <button
-          className="rest-timer-control-btn"
+          className="rest-timer-adjust-btn"
           onClick={() => timer.adjust(15)}
         >
-          +15
-        </button>
-
-        <button
-          className="rest-timer-action-btn"
-          style={{ background: isFinished ? "var(--success)" : "var(--accent)" }}
-          onClick={dismiss}
-        >
-          {isFinished ? "Fatto" : "Salta"}
+          <span className="rest-timer-adjust-icon">+</span>
+          <span className="rest-timer-adjust-label">15s</span>
         </button>
       </div>
+
+      {/* Skip / Done button */}
+      <button
+        className={`rest-timer-skip-btn ${isFinished ? "done" : ""}`}
+        onClick={dismiss}
+      >
+        {isFinished ? "✓ Fatto" : "Salta riposo"}
+      </button>
     </div>
   );
 }
