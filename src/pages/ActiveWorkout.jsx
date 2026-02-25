@@ -131,7 +131,7 @@ export default function ActiveWorkout({
 
       return routine.exercises.every((routineEx, index) => {
         const workoutEx = currentWorkout.exercises[index];
-        return routineEx.exerciseId === workoutEx.exerciseId && routineEx.setsCount === workoutEx.sets.length;
+        return routineEx.name === workoutEx.name && routineEx.setsCount === workoutEx.sets.length;
       });
     });
   };
@@ -155,27 +155,31 @@ export default function ActiveWorkout({
       </div>
 
       {/* Status bar */}
-      <div className="workout-status-bar">
+      <div className="workout-status-bar" style={{ padding: 'var(--space-3) var(--space-4)' }}>
         <div>
-          <div className="workout-status-label">Tempo</div>
-          <div className={`workout-elapsed ${paused ? "paused" : ""}`}>
+          <div className="workout-status-label" style={{ color: paused ? 'var(--warning)' : 'var(--text-muted)' }}>
+            {paused ? "In Pausa" : "Tempo"}
+          </div>
+          <div className={`workout-elapsed ${paused ? "paused" : ""}`} style={{ color: paused ? 'var(--warning)' : 'var(--text-primary)' }}>
             {fmt(elapsed)}
-            {paused ? " — Pausa" : ""}
           </div>
         </div>
 
         <div className="workout-status-right">
-          <div className="workout-sets-count">
-            <div className="workout-sets-value">{totalCompleted}</div>
-            <div className="workout-sets-label">SERIE</div>
-          </div>
-
           <button
             className="workout-pause-btn"
             onClick={handlePauseResume}
             title={paused ? "Riprendi" : "Pausa"}
+            style={{
+              borderColor: paused ? 'var(--accent)' : 'var(--border-accent)',
+              color: paused ? 'var(--accent-light)' : 'var(--text-secondary)'
+            }}
           >
-            {paused ? "▶" : "⏸"}
+            {paused ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+            )}
           </button>
 
           <button

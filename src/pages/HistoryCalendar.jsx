@@ -128,31 +128,57 @@ export default function HistoryCalendar({ workouts, onDuplicate, onDelete }) {
                     const isToday = day.date === today
                     const isSelected = day.date === selectedDate
 
-                    let btnStyle = {};
-                    if (hasWorkout && !isSelected) {
-                        const firstColor = workoutsForDay[0].routineColor || '#8b5cf6';
-                        btnStyle.backgroundColor = hexToRgba(firstColor, 0.2);
-                    }
-
                     return (
                         <button
                             key={day.date}
                             onClick={() => setSelectedDate(day.date)}
-                            className={`calendar-day-btn ${isToday ? 'today' : ''} ${hasWorkout && !isSelected ? 'has-workout' : ''} ${isSelected ? 'selected' : ''}`}
-                            style={btnStyle}
+                            className={`calendar-day-btn ${isToday ? 'today' : ''} ${hasWorkout ? 'has-workout' : ''}`}
+                            style={{ color: (hasWorkout || isSelected) ? 'white' : 'var(--text-primary)' }}
                         >
-                            {day.day}
-                            {hasWorkout && (
-                                <div className="calendar-day-dots">
-                                    {workoutsForDay.map(w => (
-                                        <span
-                                            key={w.id}
-                                            className="calendar-day-dot"
-                                            style={{ backgroundColor: isSelected ? 'var(--text-secondary)' : (w.routineColor || 'var(--accent-light)') }}
-                                        />
-                                    ))}
-                                </div>
+                            {/* Background Circle */}
+                            {(hasWorkout || isSelected) && (
+                                <div
+                                    style={{
+                                        position: 'absolute',
+                                        top: '50%',
+                                        left: '50%',
+                                        transform: 'translate(-50%, -50%)',
+                                        width: '80%',
+                                        aspectRatio: '1',
+                                        borderRadius: '50%',
+                                        backgroundColor: hasWorkout
+                                            ? ((workoutsForDay.find(w => w.routineColor || w.isVideoWorkout) || workoutsForDay[0])?.routineColor || ((workoutsForDay.find(w => w.routineColor || w.isVideoWorkout) || workoutsForDay[0]).isVideoWorkout ? '#ef4444' : 'var(--text-muted)'))
+                                            : 'var(--accent)',
+                                        boxShadow: isSelected
+                                            ? `0 0 12px ${hasWorkout ? ((workoutsForDay.find(w => w.routineColor || w.isVideoWorkout) || workoutsForDay[0])?.routineColor || 'var(--text-muted)') : 'var(--accent)'}`
+                                            : 'none',
+                                        zIndex: 0
+                                    }}
+                                />
                             )}
+
+                            {/* Selected Indicator Ring */}
+                            {isSelected && (
+                                <div
+                                    style={{
+                                        position: 'absolute',
+                                        top: '50%',
+                                        left: '50%',
+                                        transform: 'translate(-50%, -50%)',
+                                        width: '100%',
+                                        aspectRatio: '1',
+                                        borderRadius: '50%',
+                                        border: '1.5px solid var(--text-primary)',
+                                        opacity: 0.5,
+                                        zIndex: 0
+                                    }}
+                                />
+                            )}
+
+                            {/* Day Number */}
+                            <span style={{ position: 'relative', zIndex: 1, fontWeight: (hasWorkout || isSelected) ? 700 : 'inherit' }}>
+                                {day.day}
+                            </span>
                         </button>
                     )
                 })}

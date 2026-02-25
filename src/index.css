@@ -637,6 +637,10 @@ ol {
     border-radius: 0;
 }
 
+.timer-finished-glow .rest-timer-bar-progress {
+    display: none;
+}
+
 .rest-timer-bar-fill {
     height: 100%;
     background: var(--accent-gradient);
@@ -1195,37 +1199,23 @@ ol {
     cursor: pointer;
     transition: all var(--transition-fast);
     position: relative;
-    border: 1.5px solid transparent;
+    border: none;
+    outline: none;
     background: transparent;
     color: var(--text-primary);
     font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.calendar-day-btn:focus {
+    outline: none;
 }
 
 .calendar-day-btn.today {
-    border-color: var(--accent);
     font-weight: 700;
 }
 
-.calendar-day-btn.has-workout {
-    background: var(--accent-dim);
-    font-weight: 600;
-}
-
-.calendar-day-btn.selected {
-    background: var(--accent);
-    color: white;
-    border-color: var(--accent);
-}
-
-.calendar-day-dots {
-    position: absolute;
-    bottom: 3px;
-    left: 0;
-    right: 0;
-    display: flex;
-    justify-content: center;
-    gap: 2px;
-}
+/* Legacy calendar styling removed in favor of inline modern circular styling */
 
 .calendar-day-dot {
     width: 4px;

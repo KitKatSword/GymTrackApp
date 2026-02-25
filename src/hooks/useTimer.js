@@ -97,6 +97,7 @@ export default function useTimer() {
                 setIsFinished(true);
             } else {
                 setIsFinished(false);
+                setIsRunning(true);
             }
             return newRemaining;
         });
