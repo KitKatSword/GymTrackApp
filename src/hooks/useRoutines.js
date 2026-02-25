@@ -26,10 +26,11 @@ export default function useRoutines() {
         saveRoutines(routines)
     }, [routines])
 
-    const createRoutine = useCallback((name, exercises) => {
+    const createRoutine = useCallback((name, exercises, color) => {
         const routine = {
             id: generateId(),
             name,
+            color: color || '#8b5cf6', // default color if none provided
             createdAt: Date.now(),
             exercises: exercises.map(ex => ({
                 exerciseId: ex.id,

@@ -3,6 +3,16 @@ import { getAllExercises, PARAM_TYPES } from '../data/exercises'
 import ExerciseSearch from '../components/ExerciseSearch'
 import VideoPlayer from '../components/VideoPlayer'
 
+const ROUTINE_COLORS = [
+    '#ef4444', // Red
+    '#f97316', // Orange
+    '#eab308', // Yellow
+    '#10b981', // Green
+    '#0ea5e9', // Blue
+    '#8b5cf6', // Purple
+    '#ec4899', // Pink
+]
+
 function abbr(name) {
     const words = name.trim().split(/\s+/)
     if (words.length === 1) return words[0].substring(0, 2).toUpperCase()
@@ -12,6 +22,7 @@ function abbr(name) {
 export default function Routines({ routines, onCreateRoutine, onDeleteRoutine, onStartFromRoutine, onLogVideo }) {
     const [showCreate, setShowCreate] = useState(false)
     const [routineName, setRoutineName] = useState('')
+    const [routineColor, setRoutineColor] = useState(ROUTINE_COLORS[5]) // Default Purple
     const [selectedExercises, setSelectedExercises] = useState([])
     const [showExercisePicker, setShowExercisePicker] = useState(false)
     const [deleteConfirm, setDeleteConfirm] = useState(null)
@@ -47,8 +58,9 @@ export default function Routines({ routines, onCreateRoutine, onDeleteRoutine, o
 
     const handleSave = () => {
         if (!routineName.trim() || selectedExercises.length === 0) return
-        onCreateRoutine(routineName.trim(), selectedExercises)
+        onCreateRoutine(routineName.trim(), selectedExercises, routineColor)
         setRoutineName('')
+        setRoutineColor(ROUTINE_COLORS[5])
         setSelectedExercises([])
         setShowCreate(false)
     }
@@ -82,6 +94,31 @@ export default function Routines({ routines, onCreateRoutine, onDeleteRoutine, o
                         onChange={(e) => setRoutineName(e.target.value)}
                         style={{ marginBottom: 'var(--space-3)' }}
                     />
+
+                    {/* Color Picker */}
+                    <div style={{ marginBottom: 'var(--space-4)' }}>
+                        <div className="create-form-section-label" style={{ marginBottom: 8 }}>Colore Etichetta</div>
+                        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                            {ROUTINE_COLORS.map(color => (
+                                <button
+                                    key={color}
+                                    type="button"
+                                    onClick={() => setRoutineColor(color)}
+                                    style={{
+                                        width: 32,
+                                        height: 32,
+                                        borderRadius: '50%',
+                                        backgroundColor: color,
+                                        border: routineColor === color ? '2px solid white' : '2px solid transparent',
+                                        boxShadow: routineColor === color ? `0 0 0 2px ${color}` : 'none',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s',
+                                        padding: 0
+                                    }}
+                                />
+                            ))}
+                        </div>
+                    </div>
 
                     {/* Selected exercises */}
                     {selectedExercises.length > 0 && (
@@ -182,7 +219,7 @@ export default function Routines({ routines, onCreateRoutine, onDeleteRoutine, o
                         const isExpanded = expandedId === routine.id
                         const totalSets = routine.exercises.reduce((s, e) => s + e.setsCount, 0)
                         return (
-                            <div key={routine.id} className="routine-card" onClick={() => setExpandedId(isExpanded ? null : routine.id)}>
+                            <div key={routine.id} className="routine-card" style={{ borderLeft: `5px solid ${routine.color || 'var(--border)'}` }} onClick={() => setExpandedId(isExpanded ? null : routine.id)}>
                                 <div className="routine-card-header">
                                     <div>
                                         <div className="routine-card-title">{routine.name}</div>

@@ -192,6 +192,7 @@ export default function App() {
                     routines={routineActions.routines}
                     onCreateRoutine={routineActions.createRoutine}
                     onDeleteRoutine={routineActions.deleteRoutine}
+                    onUpdateRoutine={routineActions.updateRoutine}
                     onStartFromRoutine={handleStartFromRoutine}
                     onStartEmpty={handleStartWorkout}
                     onLogVideo={logVideoWorkout}

@@ -1217,9 +1217,17 @@ ol {
     border-color: var(--accent);
 }
 
-.calendar-day-dot {
+.calendar-day-dots {
     position: absolute;
     bottom: 3px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 2px;
+}
+
+.calendar-day-dot {
     width: 4px;
     height: 4px;
     border-radius: 50%;
@@ -1227,7 +1235,7 @@ ol {
 }
 
 .calendar-day-btn.selected .calendar-day-dot {
-    background: var(--text-secondary);
+    background: var(--text-secondary) !important;
 }
 
 /* ===== Dividers ===== */

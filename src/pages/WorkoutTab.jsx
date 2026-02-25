@@ -3,19 +3,25 @@ import { getAllExercises, PARAM_TYPES } from '../data/exercises'
 import ExerciseSearch from '../components/ExerciseSearch'
 import VideoPlayer from '../components/VideoPlayer'
 
+const ROUTINE_COLORS = [
+    '#ef4444', '#f97316', '#eab308', '#10b981', '#0ea5e9', '#8b5cf6', '#ec4899',
+]
+
 function abbr(name) {
     const words = name.trim().split(/\s+/)
     if (words.length === 1) return words[0].substring(0, 2).toUpperCase()
     return (words[0][0] + words[1][0]).toUpperCase()
 }
 
-export default function WorkoutTab({ routines, onCreateRoutine, onDeleteRoutine, onStartFromRoutine, onStartEmpty, onLogVideo }) {
+export default function WorkoutTab({ routines, onCreateRoutine, onDeleteRoutine, onUpdateRoutine, onStartFromRoutine, onStartEmpty, onLogVideo }) {
     const [showCreate, setShowCreate] = useState(false)
     const [routineName, setRoutineName] = useState('')
+    const [routineColor, setRoutineColor] = useState(ROUTINE_COLORS[5])
     const [selectedExercises, setSelectedExercises] = useState([])
     const [showExercisePicker, setShowExercisePicker] = useState(false)
     const [deleteConfirm, setDeleteConfirm] = useState(null)
     const [expandedId, setExpandedId] = useState(null)
+    const [editingColorId, setEditingColorId] = useState(null)
     const [completedVideos, setCompletedVideos] = useState([])
     const [selectedVideo, setSelectedVideo] = useState(null)
 
@@ -47,8 +53,9 @@ export default function WorkoutTab({ routines, onCreateRoutine, onDeleteRoutine,
 
     const handleSave = () => {
         if (!routineName.trim() || selectedExercises.length === 0) return
-        onCreateRoutine(routineName.trim(), selectedExercises)
+        onCreateRoutine(routineName.trim(), selectedExercises, routineColor)
         setRoutineName('')
+        setRoutineColor(ROUTINE_COLORS[5])
         setSelectedExercises([])
         setShowCreate(false)
     }
@@ -95,6 +102,27 @@ export default function WorkoutTab({ routines, onCreateRoutine, onDeleteRoutine,
                         onChange={(e) => setRoutineName(e.target.value)}
                         style={{ marginBottom: 'var(--space-3)' }}
                     />
+
+                    {/* Color Picker */}
+                    <div style={{ marginBottom: 'var(--space-4)' }}>
+                        <div className="create-form-section-label" style={{ marginBottom: 8 }}>Colore Etichetta</div>
+                        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                            {ROUTINE_COLORS.map(c => (
+                                <button
+                                    key={c}
+                                    type="button"
+                                    onClick={() => setRoutineColor(c)}
+                                    style={{
+                                        width: 30, height: 30, borderRadius: '50%',
+                                        backgroundColor: c,
+                                        border: routineColor === c ? '2px solid white' : '2px solid transparent',
+                                        boxShadow: routineColor === c ? `0 0 0 2px ${c}` : 'none',
+                                        cursor: 'pointer', transition: 'all 0.2s', padding: 0,
+                                    }}
+                                />
+                            ))}
+                        </div>
+                    </div>
 
                     {/* Selected exercises */}
                     {selectedExercises.length > 0 && (
@@ -165,8 +193,9 @@ export default function WorkoutTab({ routines, onCreateRoutine, onDeleteRoutine,
                     {routines.map(routine => {
                         const isExpanded = expandedId === routine.id
                         const totalSets = routine.exercises.reduce((s, e) => s + e.setsCount, 0)
+                        const isEditingColor = editingColorId === routine.id
                         return (
-                            <div key={routine.id} className="routine-card" onClick={() => setExpandedId(isExpanded ? null : routine.id)}>
+                            <div key={routine.id} className="routine-card" style={{ borderLeft: `5px solid ${routine.color || 'var(--border)'}` }} onClick={() => setExpandedId(isExpanded ? null : routine.id)}>
                                 <div className="routine-card-header">
                                     <div>
                                         <div className="routine-card-title">{routine.name}</div>
@@ -198,6 +227,36 @@ export default function WorkoutTab({ routines, onCreateRoutine, onDeleteRoutine,
                                                 <span className="routine-detail-sets">{ex.setsCount} serie</span>
                                             </div>
                                         ))}
+
+                                        {/* Color edit */}
+                                        <div style={{ marginTop: 8, marginBottom: 8 }}>
+                                            <button
+                                                className="btn btn-secondary btn-sm btn-full"
+                                                onClick={(e) => { e.stopPropagation(); setEditingColorId(isEditingColor ? null : routine.id) }}
+                                                style={{ marginBottom: isEditingColor ? 8 : 0 }}
+                                            >
+                                                🎨 Cambia Colore
+                                            </button>
+                                            {isEditingColor && (
+                                                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }} onClick={e => e.stopPropagation()}>
+                                                    {ROUTINE_COLORS.map(c => (
+                                                        <button
+                                                            key={c}
+                                                            type="button"
+                                                            onClick={() => { onUpdateRoutine(routine.id, { color: c }); setEditingColorId(null) }}
+                                                            style={{
+                                                                width: 30, height: 30, borderRadius: '50%',
+                                                                backgroundColor: c,
+                                                                border: (routine.color || '#8b5cf6') === c ? '2px solid white' : '2px solid transparent',
+                                                                boxShadow: (routine.color || '#8b5cf6') === c ? `0 0 0 2px ${c}` : 'none',
+                                                                cursor: 'pointer', transition: 'all 0.2s', padding: 0,
+                                                            }}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+
                                         <div className="history-actions">
                                             <button
                                                 className="btn btn-sm"

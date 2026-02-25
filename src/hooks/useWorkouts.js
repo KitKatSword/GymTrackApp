@@ -67,6 +67,7 @@ export default function useWorkouts() {
             startTimestamp: now.getTime(),
             endTime: null,
             routineName: routine.name,
+            routineColor: routine.color || '#8b5cf6',
             exercises,
         }
         setWorkouts(prev => [workout, ...prev])

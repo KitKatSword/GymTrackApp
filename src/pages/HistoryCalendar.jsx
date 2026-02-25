@@ -115,9 +115,11 @@ export default function HistoryCalendar({ workouts, onDuplicate, onDelete }) {
             <div className="calendar-grid">
                 {calendarDays.map((day, i) => {
                     if (!day) return <div key={`e${i}`} />
-                    const hasWorkout = !!workoutsByDate[day.date]
+                    const workoutsForDay = workoutsByDate[day.date] || []
+                    const hasWorkout = workoutsForDay.length > 0
                     const isToday = day.date === today
                     const isSelected = day.date === selectedDate
+
                     return (
                         <button
                             key={day.date}
@@ -125,7 +127,17 @@ export default function HistoryCalendar({ workouts, onDuplicate, onDelete }) {
                             className={`calendar-day-btn ${isToday ? 'today' : ''} ${hasWorkout && !isSelected ? 'has-workout' : ''} ${isSelected ? 'selected' : ''}`}
                         >
                             {day.day}
-                            {hasWorkout && <span className="calendar-day-dot" />}
+                            {hasWorkout && (
+                                <div className="calendar-day-dots">
+                                    {workoutsForDay.map(w => (
+                                        <span
+                                            key={w.id}
+                                            className="calendar-day-dot"
+                                            style={{ backgroundColor: isSelected ? 'var(--text-secondary)' : (w.routineColor || 'var(--accent-light)') }}
+                                        />
+                                    ))}
+                                </div>
+                            )}
                         </button>
                     )
                 })}
@@ -187,7 +199,10 @@ function WorkoutCard({ w, expandedId, setExpandedId, setDeleteConfirm, onDuplica
         <div
             className="history-card"
             onClick={() => setExpandedId(isExpanded ? null : w.id)}
-            style={{ marginBottom: 'var(--space-2)' }}
+            style={{
+                marginBottom: 'var(--space-2)',
+                borderLeft: `5px solid ${w.routineColor || (w.isVideoWorkout ? '#ef4444' : 'var(--border)')}`
+            }}
         >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
