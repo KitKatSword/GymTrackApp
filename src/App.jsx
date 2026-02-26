@@ -94,6 +94,7 @@ export default function App() {
         workouts, createWorkout, createWorkoutFromRoutine, logVideoWorkout, finishWorkout, deleteWorkout,
         addExercise, removeExercise, addSet, removeSet, updateSet,
         toggleSetComplete, duplicateWorkout, getTodayWorkout, getStats,
+        updateExerciseRest, updateWorkoutColor,
     } = workoutActions
 
     const activeWorkout = workouts.find(w => w.id === activeWorkoutId) || null
@@ -185,6 +186,7 @@ export default function App() {
                     onToggleSet={toggleSetComplete}
                     onUpdateNotes={workoutActions.updateWorkoutNotes}
                     onUpdateExerciseNotes={workoutActions.updateExerciseNotes}
+                    onUpdateExerciseRest={updateExerciseRest}
                     onFinish={handleFinishWorkout}
                     onGoBack={() => setActiveTab('workout')}
                     onCreateRoutine={routineActions.createRoutine}
@@ -218,6 +220,7 @@ export default function App() {
                     workouts={workouts}
                     onDuplicate={handleDuplicate}
                     onDelete={deleteWorkout}
+                    onUpdateWorkoutColor={updateWorkoutColor}
                 />
             )}
 

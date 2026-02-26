@@ -1212,21 +1212,12 @@ ol {
 }
 
 .calendar-day-btn.today {
-    font-weight: 700;
+    font-weight: 800;
 }
 
 /* Legacy calendar styling removed in favor of inline modern circular styling */
 
-.calendar-day-dot {
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background: var(--accent-light);
-}
 
-.calendar-day-btn.selected .calendar-day-dot {
-    background: var(--text-secondary) !important;
-}
 
 /* ===== Dividers ===== */
 .divider {

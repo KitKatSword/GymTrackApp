@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 
 const DAY_SHORT = ['L', 'M', 'M', 'G', 'V', 'S', 'D']
 const MONTHS = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
@@ -51,12 +51,25 @@ function ParamParts({ ex }) {
     })
 }
 
-export default function HistoryCalendar({ workouts, onDuplicate, onDelete }) {
+export default function HistoryCalendar({ workouts, onDuplicate, onDelete, onUpdateWorkoutColor }) {
     const today = new Date().toISOString().split('T')[0]
     const [viewDate, setViewDate] = useState(new Date())
     const [selectedDate, setSelectedDate] = useState(today)
     const [expandedId, setExpandedId] = useState(null)
     const [deleteConfirm, setDeleteConfirm] = useState(null)
+    const [colorPickerDay, setColorPickerDay] = useState(null)
+    const pressTimer = useRef(null)
+
+    const startPress = (dateStr, hasWorkout) => {
+        if (!hasWorkout) return
+        pressTimer.current = setTimeout(() => {
+            setColorPickerDay(dateStr)
+        }, 500)
+    }
+
+    const clearPress = () => {
+        if (pressTimer.current) clearTimeout(pressTimer.current)
+    }
 
     const year = viewDate.getFullYear()
     const month = viewDate.getMonth()
@@ -131,9 +144,14 @@ export default function HistoryCalendar({ workouts, onDuplicate, onDelete }) {
                     return (
                         <button
                             key={day.date}
+                            onMouseDown={() => startPress(day.date, hasWorkout)}
+                            onMouseUp={clearPress}
+                            onMouseLeave={clearPress}
+                            onTouchStart={() => startPress(day.date, hasWorkout)}
+                            onTouchEnd={clearPress}
                             onClick={() => setSelectedDate(day.date)}
                             className={`calendar-day-btn ${isToday ? 'today' : ''} ${hasWorkout ? 'has-workout' : ''}`}
-                            style={{ color: (hasWorkout || isSelected) ? 'white' : 'var(--text-primary)' }}
+                            style={{ color: (hasWorkout || isSelected) ? 'white' : (isToday ? 'var(--accent-light)' : 'var(--text-primary)') }}
                         >
                             {/* Background Circle */}
                             {(hasWorkout || isSelected) && (
@@ -228,6 +246,35 @@ export default function HistoryCalendar({ workouts, onDuplicate, onDelete }) {
                     </div>
                 </div>
             )}
+
+            {/* Color picker for long press */}
+            {colorPickerDay && (
+                <div className="modal-overlay" onClick={() => setColorPickerDay(null)}>
+                    <div className="modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-handle" />
+                        <div style={{ fontWeight: 700, fontSize: 'var(--text-lg)', marginBottom: 16 }}>Cambia Colore Giorno</div>
+                        <div style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-sm)', marginBottom: 24 }}>Scegli il colore per differenziare i tuoi allenamenti sul calendario.</div>
+                        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 'var(--space-4)' }}>
+                            {['#ef4444', '#f97316', '#eab308', '#10b981', '#0ea5e9', '#8b5cf6', '#ec4899', '#6e6e90'].map(c => (
+                                <button
+                                    key={c}
+                                    onClick={() => {
+                                        const workoutsOnDay = workoutsByDate[colorPickerDay] || []
+                                        workoutsOnDay.forEach(wo => {
+                                            if (onUpdateWorkoutColor) onUpdateWorkoutColor(wo.id, c)
+                                        })
+                                        setColorPickerDay(null)
+                                    }}
+                                    style={{
+                                        width: 44, height: 44, borderRadius: '50%', background: c,
+                                        border: '2px solid transparent'
+                                    }}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
@@ -247,8 +294,8 @@ function WorkoutCard({ w, expandedId, setExpandedId, setDeleteConfirm, onDuplica
         >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
-                    <div className="history-date">{formatDate(w.date)}</div>
-                    <div className="history-meta">
+                    {w.routineName && <div className="history-date">{w.routineName}</div>}
+                    <div className="history-meta" style={{ marginTop: w.routineName ? 0 : 4 }}>
                         <span>{w.startTime} – {w.endTime}</span>
                         <span>{getDuration(w.startTime, w.endTime)}</span>
                     </div>

@@ -35,9 +35,10 @@ export default function ExerciseCard({
     onRemoveExercise,
     onStartRest,
     onUpdateNotes,
+    onUpdateExerciseRest,
     activeRestSetId,
 }) {
-    const [targetRest, setTargetRest] = useState(90);
+    const targetRest = exercise.targetRest || 90;
     const [showTimePicker, setShowTimePicker] = useState(false);
     const [localNotes, setLocalNotes] = useState(exercise.notes || '');
 
@@ -89,7 +90,12 @@ export default function ExerciseCard({
                 <TimePickerModal
                     initialSeconds={targetRest}
                     onClose={() => setShowTimePicker(false)}
-                    onSave={(val) => { setTargetRest(val); setShowTimePicker(false); }}
+                    onSave={(val) => {
+                        if (onUpdateExerciseRest) {
+                            onUpdateExerciseRest(workoutId, exercise.id, val);
+                        }
+                        setShowTimePicker(false);
+                    }}
                 />
             )}
 

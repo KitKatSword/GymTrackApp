@@ -54,8 +54,12 @@ export default function History({ workouts, onDuplicate, onDelete }) {
                     <div key={w.id} className="history-card" onClick={() => setExpandedId(isExpanded ? null : w.id)}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <div>
-                                <div className="history-date">{formatDate(w.date)}</div>
-                                <div className="history-meta">
+                                {w.routineName ? (
+                                    <div className="history-date">{w.routineName}</div>
+                                ) : (
+                                    <div className="history-date">{formatDate(w.date)}</div>
+                                )}
+                                <div className="history-meta" style={{ marginTop: w.routineName ? 0 : 4 }}>
                                     <span>🕐 {w.startTime} - {w.endTime}</span>
                                     <span>⏱ {getDuration(w.startTime, w.endTime)}</span>
                                 </div>

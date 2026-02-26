@@ -15,6 +15,7 @@ export default function ActiveWorkout({
   onToggleSet,
   onUpdateNotes,
   onUpdateExerciseNotes,
+  onUpdateExerciseRest,
   onFinish,
   onGoBack,
   onCreateRoutine,
@@ -215,6 +216,7 @@ export default function ActiveWorkout({
             onRemoveExercise={onRemoveExercise}
             onStartRest={handleStartRest}
             onUpdateNotes={onUpdateExerciseNotes}
+            onUpdateExerciseRest={onUpdateExerciseRest}
             activeRestSetId={activeRestSetId}
           />
         )

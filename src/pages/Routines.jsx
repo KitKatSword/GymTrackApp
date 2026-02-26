@@ -19,8 +19,9 @@ function abbr(name) {
     return (words[0][0] + words[1][0]).toUpperCase()
 }
 
-export default function Routines({ routines, onCreateRoutine, onDeleteRoutine, onStartFromRoutine, onLogVideo }) {
+export default function Routines({ routines, onCreateRoutine, onDeleteRoutine, onUpdateRoutine, onStartFromRoutine, onLogVideo }) {
     const [showCreate, setShowCreate] = useState(false)
+    const [editingRoutineId, setEditingRoutineId] = useState(null)
     const [routineName, setRoutineName] = useState('')
     const [routineColor, setRoutineColor] = useState(ROUTINE_COLORS[5]) // Default Purple
     const [selectedExercises, setSelectedExercises] = useState([])
@@ -58,10 +59,19 @@ export default function Routines({ routines, onCreateRoutine, onDeleteRoutine, o
 
     const handleSave = () => {
         if (!routineName.trim() || selectedExercises.length === 0) return
-        onCreateRoutine(routineName.trim(), selectedExercises, routineColor)
+        if (editingRoutineId && onUpdateRoutine) {
+            onUpdateRoutine(editingRoutineId, {
+                name: routineName.trim(),
+                exercises: selectedExercises,
+                color: routineColor,
+            })
+        } else {
+            onCreateRoutine(routineName.trim(), selectedExercises, routineColor)
+        }
         setRoutineName('')
         setRoutineColor(ROUTINE_COLORS[5])
         setSelectedExercises([])
+        setEditingRoutineId(null)
         setShowCreate(false)
     }
 
@@ -75,7 +85,17 @@ export default function Routines({ routines, onCreateRoutine, onDeleteRoutine, o
             {/* Create button */}
             <button
                 className="btn btn-secondary btn-full"
-                onClick={() => setShowCreate(!showCreate)}
+                onClick={() => {
+                    if (showCreate) {
+                        setShowCreate(false)
+                        setEditingRoutineId(null)
+                        setRoutineName('')
+                        setSelectedExercises([])
+                        setRoutineColor(ROUTINE_COLORS[5])
+                    } else {
+                        setShowCreate(true)
+                    }
+                }}
                 style={{ marginBottom: 'var(--space-4)' }}
             >
                 {showCreate ? '✕ Chiudi' : '+ Nuova Routine'}
@@ -84,7 +104,7 @@ export default function Routines({ routines, onCreateRoutine, onDeleteRoutine, o
             {/* Create form */}
             {showCreate && (
                 <div className="create-form" style={{ marginBottom: 'var(--space-4)', marginTop: 0 }}>
-                    <div className="create-form-title">Nuova Routine</div>
+                    <div className="create-form-title">{editingRoutineId ? 'Modifica Routine' : 'Nuova Routine'}</div>
 
                     <input
                         className="input"
@@ -253,11 +273,27 @@ export default function Routines({ routines, onCreateRoutine, onDeleteRoutine, o
                                         ))}
                                         <div className="history-actions">
                                             <button
+                                                className="btn btn-secondary btn-sm"
+                                                style={{ flex: 1 }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    setEditingRoutineId(routine.id)
+                                                    setRoutineName(routine.name)
+                                                    setRoutineColor(routine.color || '#8b5cf6')
+                                                    // Add setsCount directly as it is mapped
+                                                    setSelectedExercises([...routine.exercises])
+                                                    setShowCreate(true)
+                                                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                                                }}
+                                            >
+                                                Modifica
+                                            </button>
+                                            <button
                                                 className="btn btn-sm"
                                                 style={{ color: 'var(--danger)', background: 'var(--danger-bg)', border: '1px solid var(--danger-bg)', flex: 1 }}
                                                 onClick={(e) => { e.stopPropagation(); setDeleteConfirm(routine.id) }}
                                             >
-                                                Elimina Routine
+                                                Elimina
                                             </button>
                                         </div>
                                     </div>

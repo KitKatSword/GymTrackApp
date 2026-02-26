@@ -25,6 +25,7 @@ export default function WorkoutTab({
     onLogVideo
 }) {
     const [showCreate, setShowCreate] = useState(false)
+    const [editingRoutineId, setEditingRoutineId] = useState(null)
     const [routineName, setRoutineName] = useState('')
     const [routineColor, setRoutineColor] = useState(ROUTINE_COLORS[5])
     const [selectedExercises, setSelectedExercises] = useState([])
@@ -63,10 +64,19 @@ export default function WorkoutTab({
 
     const handleSave = () => {
         if (!routineName.trim() || selectedExercises.length === 0) return
-        onCreateRoutine(routineName.trim(), selectedExercises, routineColor)
+        if (editingRoutineId) {
+            onUpdateRoutine(editingRoutineId, {
+                name: routineName.trim(),
+                exercises: selectedExercises,
+                color: routineColor,
+            })
+        } else {
+            onCreateRoutine(routineName.trim(), selectedExercises, routineColor)
+        }
         setRoutineName('')
         setRoutineColor(ROUTINE_COLORS[5])
         setSelectedExercises([])
+        setEditingRoutineId(null)
         setShowCreate(false)
     }
 
@@ -103,7 +113,17 @@ export default function WorkoutTab({
                 <div className="section-label" style={{ marginBottom: 0 }}>Le Tue Routine</div>
                 <button
                     className="btn btn-secondary btn-sm"
-                    onClick={() => setShowCreate(!showCreate)}
+                    onClick={() => {
+                        if (showCreate) {
+                            setShowCreate(false)
+                            setEditingRoutineId(null)
+                            setRoutineName('')
+                            setSelectedExercises([])
+                            setRoutineColor(ROUTINE_COLORS[5])
+                        } else {
+                            setShowCreate(true)
+                        }
+                    }}
                 >
                     {showCreate ? 'Annulla' : '+ Nuova'}
                 </button>
@@ -112,7 +132,7 @@ export default function WorkoutTab({
             {/* Create form */}
             {showCreate && (
                 <div className="create-form" style={{ marginBottom: 'var(--space-4)', marginTop: 0 }}>
-                    <div className="create-form-title">Nuova Routine</div>
+                    <div className="create-form-title">{editingRoutineId ? 'Modifica Routine' : 'Nuova Routine'}</div>
 
                     <input
                         className="input"
@@ -260,17 +280,35 @@ export default function WorkoutTab({
                                             </div>
                                         ))}
 
-                                        {/* Color edit */}
+                                        {/* Color & Actions */}
                                         <div style={{ marginTop: 8, marginBottom: 8 }}>
-                                            <button
-                                                className="btn btn-secondary btn-sm btn-full"
-                                                onClick={(e) => { e.stopPropagation(); setEditingColorId(isEditingColor ? null : routine.id) }}
-                                                style={{ marginBottom: isEditingColor ? 8 : 0 }}
-                                            >
-                                                🎨 Cambia Colore
-                                            </button>
+                                            <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                                                <button
+                                                    className="btn btn-secondary btn-sm"
+                                                    style={{ flex: 1 }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        setEditingColorId(null)
+                                                        setEditingRoutineId(routine.id)
+                                                        setRoutineName(routine.name)
+                                                        setRoutineColor(routine.color || '#8b5cf6')
+                                                        setSelectedExercises([...routine.exercises])
+                                                        setShowCreate(true)
+                                                        window.scrollTo({ top: 0, behavior: 'smooth' })
+                                                    }}
+                                                >
+                                                    Modifica
+                                                </button>
+                                                <button
+                                                    className="btn btn-secondary btn-sm"
+                                                    style={{ flex: 1 }}
+                                                    onClick={(e) => { e.stopPropagation(); setEditingColorId(isEditingColor ? null : routine.id) }}
+                                                >
+                                                    🎨 Colore
+                                                </button>
+                                            </div>
                                             {isEditingColor && (
-                                                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }} onClick={e => e.stopPropagation()}>
+                                                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center', marginTop: 12 }} onClick={e => e.stopPropagation()}>
                                                     {ROUTINE_COLORS.map(c => (
                                                         <button
                                                             key={c}

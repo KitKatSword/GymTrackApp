@@ -57,6 +57,7 @@ export default function useWorkouts() {
                 params,
                 isCustom: rex.isCustom || false,
                 image: rex.image || null,
+                targetRest: rex.targetRest || 90,
                 sets,
             }
         })
@@ -129,6 +130,7 @@ export default function useWorkouts() {
             category: exercise.category,
             params: params,
             isCustom: exercise.isCustom || false,
+            targetRest: exercise.targetRest || 90,
             sets: [initialSet],
         }
         setWorkouts(prev => prev.map(w =>
@@ -255,6 +257,25 @@ export default function useWorkouts() {
         ))
     }, [])
 
+    const updateExerciseRest = useCallback((workoutId, exerciseId, targetRest) => {
+        setWorkouts(prev => prev.map(w =>
+            w.id === workoutId
+                ? {
+                    ...w,
+                    exercises: w.exercises.map(e =>
+                        e.id === exerciseId ? { ...e, targetRest } : e
+                    )
+                }
+                : w
+        ))
+    }, [])
+
+    const updateWorkoutColor = useCallback((workoutId, color) => {
+        setWorkouts(prev => prev.map(w =>
+            w.id === workoutId ? { ...w, routineColor: color } : w
+        ))
+    }, [])
+
     const getTodayWorkout = useCallback(() => {
         const today = new Date().toISOString().split('T')[0]
         return workouts.find(w => w.date === today && !w.endTime)
@@ -316,6 +337,8 @@ export default function useWorkouts() {
         duplicateWorkout,
         updateWorkoutNotes,
         updateExerciseNotes,
+        updateExerciseRest,
+        updateWorkoutColor,
         getTodayWorkout,
         getStats,
     }
