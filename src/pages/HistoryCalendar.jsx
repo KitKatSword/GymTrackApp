@@ -321,7 +321,21 @@ function WorkoutCard({ w, expandedId, setExpandedId, setDeleteConfirm, onDuplica
                     )}
                     {w.exercises.map(ex => (
                         <div key={ex.id} style={{ marginBottom: 10 }}>
-                            <div className="history-exercise-name">{ex.name}</div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <div className="history-exercise-name">{ex.name}</div>
+                                {!ex.isVideo && ex.targetRest && (
+                                    <span style={{
+                                        fontSize: 'var(--text-xs)',
+                                        color: 'var(--text-muted)',
+                                        background: 'var(--bg-input)',
+                                        padding: '2px 6px',
+                                        borderRadius: 'var(--radius-sm)',
+                                        whiteSpace: 'nowrap',
+                                    }}>
+                                        ⏱ {Math.floor(ex.targetRest / 60)}:{(ex.targetRest % 60).toString().padStart(2, '0')}
+                                    </span>
+                                )}
+                            </div>
                             {ex.notes && (
                                 <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: 4, fontStyle: 'italic' }}>
                                     Nota: {ex.notes}

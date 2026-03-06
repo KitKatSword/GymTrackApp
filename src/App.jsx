@@ -120,12 +120,27 @@ export default function App() {
     }, [activeWorkout, todayWorkout])
 
     const handleFinishWorkout = useCallback((id) => {
+        // Sync rest times back to the source routine
+        const finishedWorkout = workouts.find(w => w.id === id)
+        if (finishedWorkout && finishedWorkout.routineName) {
+            const matchingRoutine = routineActions.routines.find(r => r.name === finishedWorkout.routineName)
+            if (matchingRoutine) {
+                const updatedExercises = matchingRoutine.exercises.map(routineEx => {
+                    const workoutEx = finishedWorkout.exercises.find(we => we.name === routineEx.name)
+                    if (workoutEx && workoutEx.targetRest) {
+                        return { ...routineEx, targetRest: workoutEx.targetRest }
+                    }
+                    return routineEx
+                })
+                routineActions.updateRoutine(matchingRoutine.id, { exercises: updatedExercises })
+            }
+        }
         finishWorkout(id)
         setActiveWorkoutId(null)
         localStorage.removeItem('gymtrack_active_workout')
         timer.dismiss()
         setActiveTab('home')
-    }, [finishWorkout, timer])
+    }, [finishWorkout, timer, workouts, routineActions])
 
     const handleDuplicate = useCallback((id) => {
         const w = duplicateWorkout(id)

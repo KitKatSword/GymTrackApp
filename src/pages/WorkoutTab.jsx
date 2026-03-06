@@ -32,7 +32,6 @@ export default function WorkoutTab({
     const [showExercisePicker, setShowExercisePicker] = useState(false)
     const [deleteConfirm, setDeleteConfirm] = useState(null)
     const [expandedId, setExpandedId] = useState(null)
-    const [editingColorId, setEditingColorId] = useState(null)
     const [completedVideos, setCompletedVideos] = useState([])
     const [selectedVideo, setSelectedVideo] = useState(null)
 
@@ -233,7 +232,6 @@ export default function WorkoutTab({
                     {routines.map(routine => {
                         const isExpanded = expandedId === routine.id
                         const totalSets = routine.exercises.reduce((s, e) => s + e.setsCount, 0)
-                        const isEditingColor = editingColorId === routine.id
                         return (
                             <div key={routine.id} className="routine-card" style={{ borderLeft: `5px solid ${routine.color || 'var(--border)'}` }} onClick={() => setExpandedId(isExpanded ? null : routine.id)}>
                                 <div className="routine-card-header">
@@ -276,58 +274,34 @@ export default function WorkoutTab({
                                         {routine.exercises.map((ex, i) => (
                                             <div key={i} className="routine-detail-item">
                                                 <span className="routine-detail-name">{ex.name}</span>
-                                                <span className="routine-detail-sets">{ex.setsCount} serie</span>
+                                                <span className="routine-detail-sets">
+                                                    {ex.setsCount} serie
+                                                    {ex.targetRest && ex.targetRest !== 90 && (
+                                                        <span style={{ marginLeft: 6, opacity: 0.7 }}>
+                                                            · ⏱ {Math.floor(ex.targetRest / 60)}:{(ex.targetRest % 60).toString().padStart(2, '0')}
+                                                        </span>
+                                                    )}
+                                                </span>
                                             </div>
                                         ))}
 
-                                        {/* Color & Actions */}
-                                        <div style={{ marginTop: 8, marginBottom: 8 }}>
-                                            <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-                                                <button
-                                                    className="btn btn-secondary btn-sm"
-                                                    style={{ flex: 1 }}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation()
-                                                        setEditingColorId(null)
-                                                        setEditingRoutineId(routine.id)
-                                                        setRoutineName(routine.name)
-                                                        setRoutineColor(routine.color || '#8b5cf6')
-                                                        setSelectedExercises([...routine.exercises])
-                                                        setShowCreate(true)
-                                                        window.scrollTo({ top: 0, behavior: 'smooth' })
-                                                    }}
-                                                >
-                                                    Modifica
-                                                </button>
-                                                <button
-                                                    className="btn btn-secondary btn-sm"
-                                                    style={{ flex: 1 }}
-                                                    onClick={(e) => { e.stopPropagation(); setEditingColorId(isEditingColor ? null : routine.id) }}
-                                                >
-                                                    🎨 Colore
-                                                </button>
-                                            </div>
-                                            {isEditingColor && (
-                                                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center', marginTop: 12 }} onClick={e => e.stopPropagation()}>
-                                                    {ROUTINE_COLORS.map(c => (
-                                                        <button
-                                                            key={c}
-                                                            type="button"
-                                                            onClick={() => { onUpdateRoutine(routine.id, { color: c }); setEditingColorId(null) }}
-                                                            style={{
-                                                                width: 30, height: 30, borderRadius: '50%',
-                                                                backgroundColor: c,
-                                                                border: (routine.color || '#8b5cf6') === c ? '2px solid white' : '2px solid transparent',
-                                                                boxShadow: (routine.color || '#8b5cf6') === c ? `0 0 0 2px ${c}` : 'none',
-                                                                cursor: 'pointer', transition: 'all 0.2s', padding: 0,
-                                                            }}
-                                                        />
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="history-actions">
+                                        {/* Actions */}
+                                        <div className="history-actions" style={{ marginTop: 12 }}>
+                                            <button
+                                                className="btn btn-secondary btn-sm"
+                                                style={{ flex: 1 }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    setEditingRoutineId(routine.id)
+                                                    setRoutineName(routine.name)
+                                                    setRoutineColor(routine.color || '#8b5cf6')
+                                                    setSelectedExercises([...routine.exercises])
+                                                    setShowCreate(true)
+                                                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                                                }}
+                                            >
+                                                Modifica
+                                            </button>
                                             <button
                                                 className="btn btn-sm"
                                                 style={{ color: 'var(--danger)', background: 'var(--danger-bg)', border: '1px solid var(--danger-bg)', flex: 1 }}

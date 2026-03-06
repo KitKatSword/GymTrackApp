@@ -41,6 +41,7 @@ export default function useRoutines() {
                 isCustom: ex.isCustom || false,
                 image: ex.image || null,
                 setsCount: ex.setsCount || 3,
+                targetRest: ex.targetRest || 90,
             })),
         }
         setRoutines(prev => [routine, ...prev])
