@@ -37,13 +37,16 @@ export default function ExerciseCard({
     onUpdateNotes,
     onUpdateExerciseRest,
     activeRestSetId,
+    isPastLog = false
 }) {
     const targetRest = exercise.targetRest || 90;
     const [showTimePicker, setShowTimePicker] = useState(false);
     const [localNotes, setLocalNotes] = useState(exercise.notes || '');
 
     const params = exercise.params || ["weight", "reps"];
-    const gridTemplate = `28px ${params.map(() => "1fr").join(" ")} 36px`;
+    const gridTemplate = isPastLog
+        ? `28px ${params.map(() => "1fr").join(" ")}`
+        : `28px ${params.map(() => "1fr").join(" ")} 36px`;
 
     const isResting = exercise.sets.some(s => s.id === activeRestSetId);
 
@@ -113,7 +116,7 @@ export default function ExerciseCard({
                         {getParamLabel(p)}
                     </div>
                 ))}
-                <div className="set-label">✓</div>
+                {!isPastLog && <div className="set-label">✓</div>}
             </div>
 
             {exercise.sets.map((set, idx) => {
@@ -149,17 +152,19 @@ export default function ExerciseCard({
                             </div>
                         ))}
 
-                        <button
-                            className={`check-btn ${set.completed ? "checked" : ""}`}
-                            onClick={() => {
-                                onToggleSet(workoutId, exercise.id, set.id);
-                                if (!set.completed) {
-                                    onStartRest(exercise.name, idx + 1, set.id, targetRest);
-                                }
-                            }}
-                        >
-                            {set.completed ? "✓" : ""}
-                        </button>
+                        {!isPastLog && (
+                            <button
+                                className={`check-btn ${set.completed ? "checked" : ""}`}
+                                onClick={() => {
+                                    onToggleSet(workoutId, exercise.id, set.id);
+                                    if (!set.completed) {
+                                        onStartRest(exercise.name, idx + 1, set.id, targetRest);
+                                    }
+                                }}
+                            >
+                                {set.completed ? "✓" : ""}
+                            </button>
+                        )}
                     </div>
                 );
             })}

@@ -5,6 +5,7 @@ import useRoutines from './hooks/useRoutines'
 import RestTimerBar from './components/RestTimerBar'
 import Home from './pages/Home'
 import ActiveWorkout from './pages/ActiveWorkout'
+import LogPastWorkout from './pages/LogPastWorkout'
 import HistoryCalendar from './pages/HistoryCalendar'
 import WorkoutTab from './pages/WorkoutTab'
 import VideoLibrary from './pages/VideoLibrary'
@@ -94,7 +95,7 @@ export default function App() {
         workouts, createWorkout, createWorkoutFromRoutine, logVideoWorkout, finishWorkout, deleteWorkout,
         addExercise, removeExercise, addSet, removeSet, updateSet,
         toggleSetComplete, duplicateWorkout, getTodayWorkout, getStats,
-        updateExerciseRest, updateWorkoutColor,
+        updateExerciseRest, updateWorkoutColor, updateWorkoutTimerState, updateEmomExercise, createWorkoutOnDate, loadRoutineIntoWorkout,
     } = workoutActions
 
     const activeWorkout = workouts.find(w => w.id === activeWorkoutId) || null
@@ -158,6 +159,34 @@ export default function App() {
         setActiveTab('active-workout')
     }, [createWorkoutFromRoutine])
 
+    const handleStartWorkoutOnDate = useCallback((dateStr) => {
+        const w = createWorkoutOnDate(dateStr)
+        setActiveWorkoutId(w.id)
+        localStorage.setItem('gymtrack_active_workout', w.id)
+        setActiveTab('log-past')
+    }, [createWorkoutOnDate])
+
+    const handleFinishPastWorkout = useCallback((id, startTime, endTime) => {
+        const finishedWorkout = workouts.find(w => w.id === id)
+        if (finishedWorkout && finishedWorkout.routineName) {
+            const matchingRoutine = routineActions.routines.find(r => r.name === finishedWorkout.routineName)
+            if (matchingRoutine) {
+                const updatedExercises = matchingRoutine.exercises.map(routineEx => {
+                    const workoutEx = finishedWorkout.exercises.find(we => we.name === routineEx.name)
+                    if (workoutEx && workoutEx.targetRest) {
+                        return { ...routineEx, targetRest: workoutEx.targetRest }
+                    }
+                    return routineEx
+                })
+                routineActions.updateRoutine(matchingRoutine.id, { exercises: updatedExercises })
+            }
+        }
+        finishWorkout(id, startTime, endTime, true)
+        setActiveWorkoutId(null)
+        localStorage.removeItem('gymtrack_active_workout')
+        setActiveTab('history')
+    }, [finishWorkout, workouts, routineActions])
+
     const handleExport = useCallback(() => {
         exportAllData()
     }, [])
@@ -202,6 +231,8 @@ export default function App() {
                     onUpdateNotes={workoutActions.updateWorkoutNotes}
                     onUpdateExerciseNotes={workoutActions.updateExerciseNotes}
                     onUpdateExerciseRest={updateExerciseRest}
+                    onUpdateEmom={updateEmomExercise}
+                    onUpdateTimerState={updateWorkoutTimerState}
                     onFinish={handleFinishWorkout}
                     onGoBack={() => setActiveTab('workout')}
                     onCreateRoutine={routineActions.createRoutine}
@@ -236,6 +267,29 @@ export default function App() {
                     onDuplicate={handleDuplicate}
                     onDelete={deleteWorkout}
                     onUpdateWorkoutColor={updateWorkoutColor}
+                    onStartWorkoutOnDate={handleStartWorkoutOnDate}
+                    hasActiveWorkout={!!activeWorkout || !!todayWorkout}
+                />
+            )}
+
+            {activeTab === 'log-past' && (
+                <LogPastWorkout
+                    workout={activeWorkout}
+                    routines={routineActions.routines}
+                    onAddExercise={addExercise}
+                    onRemoveExercise={removeExercise}
+                    onAddSet={addSet}
+                    onRemoveSet={removeSet}
+                    onUpdateSet={updateSet}
+                    onToggleSet={toggleSetComplete}
+                    onUpdateNotes={workoutActions.updateWorkoutNotes}
+                    onUpdateExerciseNotes={workoutActions.updateExerciseNotes}
+                    onUpdateExerciseRest={updateExerciseRest}
+                    onUpdateEmom={updateEmomExercise}
+                    onFinish={handleFinishPastWorkout}
+                    onGoBack={() => { setActiveWorkoutId(null); localStorage.removeItem('gymtrack_active_workout'); deleteWorkout(activeWorkout?.id); setActiveTab('history') }}
+                    onCreateRoutine={routineActions.createRoutine}
+                    onLoadRoutine={loadRoutineIntoWorkout}
                 />
             )}
 

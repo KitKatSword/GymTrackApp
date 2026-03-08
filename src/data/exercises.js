@@ -66,13 +66,14 @@ const exercises = [
     { id: 'stair-climber', name: 'Stair Climber', category: 'Cardio', emoji: '🪜', params: ['time'] },
 ]
 
-export const categories = ['Tutti', 'Petto', 'Schiena', 'Spalle', 'Braccia', 'Gambe', 'Core', 'Cardio', 'Custom']
+export const categories = ['Tutti', 'Petto', 'Schiena', 'Spalle', 'Braccia', 'Gambe', 'Core', 'Cardio', 'EMOM', 'Custom']
 
 // Available parameter types for custom exercises
 export const PARAM_TYPES = [
     { id: 'weight', label: 'Kg', icon: '⚖️' },
     { id: 'reps', label: 'Reps', icon: '🔢' },
     { id: 'time', label: 'Tempo (s)', icon: '⏱️' },
+    { id: 'emom', label: 'EMOM', icon: '⏱️' },
 ]
 
 // Load custom exercises from localStorage

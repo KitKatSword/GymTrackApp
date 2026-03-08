@@ -44,6 +44,23 @@ export default function useWorkouts() {
         const now = new Date()
         const exercises = routine.exercises.map(rex => {
             const params = rex.params || ['weight', 'reps']
+            const isEmom = rex.isEmom || params.includes('emom')
+            if (isEmom) {
+                return {
+                    id: generateId(),
+                    name: rex.name,
+                    emoji: rex.emoji || '',
+                    category: rex.category,
+                    params: ['emom'],
+                    isCustom: rex.isCustom || false,
+                    isEmom: true,
+                    image: rex.image || null,
+                    emomBlocks: rex.emomBlocks || [{ minutes: 10, reps: 5 }],
+                    emomWeight: rex.emomWeight || '',
+                    emomCompleted: false,
+                    sets: [],
+                }
+            }
             const sets = Array.from({ length: rex.setsCount || 3 }, () => {
                 const set = { id: generateId(), completed: false }
                 params.forEach(p => { set[p] = '' })
@@ -107,12 +124,30 @@ export default function useWorkouts() {
         return workout
     }, [])
 
-    const finishWorkout = useCallback((workoutId) => {
-        setWorkouts(prev => prev.map(w =>
-            w.id === workoutId
-                ? { ...w, endTime: new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) }
-                : w
-        ))
+    const finishWorkout = useCallback((workoutId, startTimeOverride, endTimeOverride, autoCompleteAll = false) => {
+        setWorkouts(prev => prev.map(w => {
+            if (w.id !== workoutId) return w;
+
+            let updatedExercises = w.exercises;
+            if (autoCompleteAll) {
+                updatedExercises = w.exercises.map(ex => {
+                    if (ex.isEmom) {
+                        return { ...ex, emomCompleted: true };
+                    }
+                    return {
+                        ...ex,
+                        sets: ex.sets.map(s => ({ ...s, completed: true }))
+                    };
+                });
+            }
+
+            return {
+                ...w,
+                startTime: startTimeOverride || w.startTime,
+                endTime: endTimeOverride || new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
+                exercises: updatedExercises
+            };
+        }))
     }, [])
 
     const deleteWorkout = useCallback((workoutId) => {
@@ -121,6 +156,30 @@ export default function useWorkouts() {
 
     const addExercise = useCallback((workoutId, exercise) => {
         const params = exercise.params || ['weight', 'reps']
+        const isEmom = exercise.isEmom || params.includes('emom')
+
+        if (isEmom) {
+            const newExercise = {
+                id: generateId(),
+                name: exercise.name,
+                emoji: exercise.emoji,
+                category: exercise.category,
+                params: ['emom'],
+                isCustom: exercise.isCustom || false,
+                isEmom: true,
+                emomBlocks: [{ minutes: 10, reps: 5 }],
+                emomWeight: '',
+                emomCompleted: false,
+                sets: [],
+            }
+            setWorkouts(prev => prev.map(w =>
+                w.id === workoutId
+                    ? { ...w, exercises: [...w.exercises, newExercise] }
+                    : w
+            ))
+            return
+        }
+
         const initialSet = { id: generateId(), completed: false }
         params.forEach(p => { initialSet[p] = '' })
         const newExercise = {
@@ -276,6 +335,81 @@ export default function useWorkouts() {
         ))
     }, [])
 
+    const updateWorkoutTimerState = useCallback((workoutId, timerState) => {
+        setWorkouts(prev => prev.map(w =>
+            w.id === workoutId ? { ...w, ...timerState } : w
+        ))
+    }, [])
+
+    const updateEmomExercise = useCallback((workoutId, exerciseId, emomData) => {
+        setWorkouts(prev => prev.map(w =>
+            w.id === workoutId
+                ? {
+                    ...w,
+                    exercises: w.exercises.map(e =>
+                        e.id === exerciseId ? { ...e, ...emomData } : e
+                    )
+                }
+                : w
+        ))
+    }, [])
+
+    const createWorkoutOnDate = useCallback((dateStr) => {
+        const workout = {
+            id: generateId(),
+            date: dateStr,
+            startTime: '09:00',
+            startTimestamp: new Date(dateStr + 'T09:00:00').getTime(),
+            endTime: null,
+            exercises: [],
+        }
+        setWorkouts(prev => [workout, ...prev])
+        return workout
+    }, [])
+
+    const loadRoutineIntoWorkout = useCallback((workoutId, routine) => {
+        const exercises = routine.exercises.map(rex => {
+            const params = rex.params || ['weight', 'reps']
+            const isEmom = rex.isEmom || params.includes('emom')
+            if (isEmom) {
+                return {
+                    id: generateId(),
+                    name: rex.name,
+                    emoji: rex.emoji || '',
+                    category: rex.category,
+                    params: ['emom'],
+                    isCustom: rex.isCustom || false,
+                    isEmom: true,
+                    emomBlocks: rex.emomBlocks || [{ minutes: 10, reps: 5 }],
+                    emomWeight: rex.emomWeight || '',
+                    emomCompleted: false,
+                    sets: [],
+                }
+            }
+            const sets = Array.from({ length: rex.setsCount || 3 }, () => {
+                const set = { id: generateId(), completed: false }
+                params.forEach(p => { set[p] = '' })
+                return set
+            })
+            return {
+                id: generateId(),
+                name: rex.name,
+                emoji: rex.emoji || '',
+                category: rex.category,
+                params,
+                isCustom: rex.isCustom || false,
+                image: rex.image || null,
+                targetRest: rex.targetRest || 90,
+                sets,
+            }
+        })
+        setWorkouts(prev => prev.map(w =>
+            w.id === workoutId
+                ? { ...w, exercises: [...w.exercises, ...exercises], routineName: routine.name, routineColor: routine.color || '#8b5cf6' }
+                : w
+        ))
+    }, [])
+
     const getTodayWorkout = useCallback(() => {
         const today = new Date().toISOString().split('T')[0]
         return workouts.find(w => w.date === today && !w.endTime)
@@ -339,6 +473,10 @@ export default function useWorkouts() {
         updateExerciseNotes,
         updateExerciseRest,
         updateWorkoutColor,
+        updateWorkoutTimerState,
+        updateEmomExercise,
+        createWorkoutOnDate,
+        loadRoutineIntoWorkout,
         getTodayWorkout,
         getStats,
     }

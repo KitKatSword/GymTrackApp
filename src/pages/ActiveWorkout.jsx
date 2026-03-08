@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import ExerciseCard from "../components/ExerciseCard";
+import EmomCard from "../components/EmomCard";
 import VideoExerciseCard from "../components/VideoExerciseCard";
 import ExerciseSearch from "../components/ExerciseSearch";
 
@@ -16,6 +17,8 @@ export default function ActiveWorkout({
   onUpdateNotes,
   onUpdateExerciseNotes,
   onUpdateExerciseRest,
+  onUpdateEmom,
+  onUpdateTimerState,
   onFinish,
   onGoBack,
   onCreateRoutine,
@@ -23,21 +26,28 @@ export default function ActiveWorkout({
   const [showSearch, setShowSearch] = useState(false);
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
   const [elapsed, setElapsed] = useState(0);
-  const [paused, setPaused] = useState(false);
+  const [paused, setPaused] = useState(workout?.isPaused || false);
   const [activeRestSetId, setActiveRestSetId] = useState(null);
   const [localSessionNotes, setLocalSessionNotes] = useState(workout?.notes || '');
   const [saveAsRoutine, setSaveAsRoutine] = useState(false);
   const [routineName, setRoutineName] = useState('');
-  const pausedAtRef = useRef(0);
-  const pausedAccRef = useRef(0);
+  const pausedAtRef = useRef(workout?.pausedAt || 0);
+  const pausedAccRef = useRef(workout?.pausedAcc || 0);
+
+  // Sync state if workout changes (e.g. initial mount or resume after tab switch)
+  useEffect(() => {
+    if (workout) {
+      if (workout.isPaused !== undefined && workout.isPaused !== paused) setPaused(workout.isPaused);
+      if (workout.pausedAt !== undefined) pausedAtRef.current = workout.pausedAt;
+      if (workout.pausedAcc !== undefined) pausedAccRef.current = workout.pausedAcc;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workout?.id]);
 
   // Elapsed timer with pause support
   useEffect(() => {
     if (!workout) return;
-    if (paused) {
-      pausedAtRef.current = Date.now();
-      return;
-    }
+    if (paused) return;
 
     const getStartMs = () => {
       if (workout.startTimestamp) return workout.startTimestamp;
@@ -59,14 +69,31 @@ export default function ActiveWorkout({
     return () => clearInterval(id);
   }, [workout?.startTime, workout?.startTimestamp, paused]);
 
-  const handlePauseResume = () => {
-    if (!paused) {
+  const handlePauseResume = (forcePaused) => {
+    const isBool = typeof forcePaused === 'boolean';
+    const shouldPause = isBool ? forcePaused : !paused;
+
+    if (shouldPause && !paused) {
+      const now = Date.now();
+      pausedAtRef.current = now;
       setPaused(true);
-    } else {
-      const pausedSecs = Math.floor((Date.now() - pausedAtRef.current) / 1000);
+      if (onUpdateTimerState && workout) {
+        onUpdateTimerState(workout.id, { isPaused: true, pausedAt: now });
+      }
+    } else if (!shouldPause && paused) {
+      const now = Date.now();
+      const pausedSecs = Math.floor((now - pausedAtRef.current) / 1000);
       pausedAccRef.current += pausedSecs;
       setPaused(false);
+      if (onUpdateTimerState && workout) {
+        onUpdateTimerState(workout.id, { isPaused: false, pausedAt: null, pausedAcc: pausedAccRef.current });
+      }
     }
+  };
+
+  // Sync EMOM pause with main workout timer
+  const handleEmomPause = (emomIsPaused) => {
+    handlePauseResume(emomIsPaused);
   };
 
   const fmt = (s) => {
@@ -194,7 +221,7 @@ export default function ActiveWorkout({
       </div>
 
       {/* Exercise list */}
-      {workout.exercises.map((ex) => (
+      {workout.exercises.map((ex) =>
         ex.isVideo || ex.videoYt ? (
           <VideoExerciseCard
             key={ex.id}
@@ -203,6 +230,16 @@ export default function ActiveWorkout({
             onToggleSet={onToggleSet}
             onRemoveExercise={onRemoveExercise}
             onUpdateNotes={onUpdateExerciseNotes}
+          />
+        ) : ex.isEmom ? (
+          <EmomCard
+            key={ex.id}
+            exercise={ex}
+            workoutId={workout.id}
+            onRemoveExercise={onRemoveExercise}
+            onUpdateEmom={onUpdateEmom}
+            onUpdateNotes={onUpdateExerciseNotes}
+            onEmomPause={handleEmomPause}
           />
         ) : (
           <ExerciseCard
@@ -220,7 +257,7 @@ export default function ActiveWorkout({
             activeRestSetId={activeRestSetId}
           />
         )
-      ))}
+      )}
 
       {/* Session Notes */}
       <div style={{ marginTop: 12, marginBottom: 8 }}>

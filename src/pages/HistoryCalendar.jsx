@@ -35,23 +35,61 @@ function ParamParts({ ex }) {
             </span>
         )
     }
-    const params = ex.params || ['weight', 'reps']
-    return ex.sets.filter(s => s.completed).map((s, i) => {
-        const parts = params.map(p => {
-            if (p === 'weight') return `${s.weight || 0} kg`
-            if (p === 'reps') return `${s.reps || 0} reps`
-            if (p === 'time') return `${s.time || 0}s`
-            return `${s[p] || 0}`
-        })
+    if (ex.isEmom) {
+        const blocks = ex.emomBlocks || []
+        const totalMin = blocks.reduce((s, b) => s + b.minutes, 0)
+        const totalReps = blocks.reduce((s, b) => s + b.minutes * b.reps, 0)
         return (
-            <span key={s.id} style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-                Set {i + 1}: {parts.join(' × ')}
-            </span>
+            <div style={{ background: 'var(--bg-input)', padding: '10px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', marginTop: 4 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--accent)' }}>
+                        <polygon points="5 3 19 12 5 21 5 3" />
+                    </svg>
+                    <span style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--text-primary)' }}>
+                        {totalMin} min · {totalReps} Rep Totali
+                    </span>
+                </div>
+
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {blocks.map((b, i) => (
+                        <span key={i} style={{ fontSize: 'var(--text-xs)', background: 'var(--bg-card)', padding: '2px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                            {blocks.length > 1 ? `B${i + 1}: ` : ''}{b.minutes}' × {b.reps}
+                        </span>
+                    ))}
+                    {ex.emomWeight && (
+                        <span style={{ fontSize: 'var(--text-xs)', background: 'var(--accent-dim)', padding: '2px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-accent)', color: 'var(--accent-light)', fontWeight: 600 }}>
+                            {ex.emomWeight} kg
+                        </span>
+                    )}
+                </div>
+            </div>
         )
-    })
+    }
+    const params = ex.params || ['weight', 'reps']
+    const completedSets = ex.sets.filter(s => s.completed)
+    if (completedSets.length === 0) return null
+    return (
+        <div style={{ background: 'var(--bg-input)', padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', marginTop: 4, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {completedSets.map((s, i) => {
+                const parts = params.map(p => {
+                    if (p === 'weight') return `${s.weight || 0} kg`
+                    if (p === 'reps') return `${s.reps || 0} reps`
+                    if (p === 'time') return `${s.time || 0}s`
+                    return `${s[p] || 0}`
+                })
+                const isLast = i === completedSets.length - 1
+                return (
+                    <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: isLast ? 0 : 6, borderBottom: isLast ? 'none' : '1px solid var(--border)' }}>
+                        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontWeight: 600, width: 45 }}>Set {i + 1}</span>
+                        <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-primary)', fontWeight: 500 }}>{parts.join(' × ')}</span>
+                    </div>
+                )
+            })}
+        </div>
+    )
 }
 
-export default function HistoryCalendar({ workouts, onDuplicate, onDelete, onUpdateWorkoutColor }) {
+export default function HistoryCalendar({ workouts, onDuplicate, onDelete, onUpdateWorkoutColor, onStartWorkoutOnDate, hasActiveWorkout }) {
     const today = new Date().toISOString().split('T')[0]
     const [viewDate, setViewDate] = useState(new Date())
     const [selectedDate, setSelectedDate] = useState(today)
@@ -216,6 +254,20 @@ export default function HistoryCalendar({ workouts, onDuplicate, onDelete, onUpd
                             </svg>
                             <div className="title">Nessun allenamento</div>
                             <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>Non hai completato allenamenti in questa data.</p>
+                            {selectedDate <= today && onStartWorkoutOnDate && !hasActiveWorkout && (
+                                <button
+                                    className="btn btn-primary btn-sm"
+                                    style={{ marginTop: 12 }}
+                                    onClick={() => onStartWorkoutOnDate(selectedDate)}
+                                >
+                                    + Aggiungi allenamento per questa data
+                                </button>
+                            )}
+                            {selectedDate <= today && hasActiveWorkout && (
+                                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 8 }}>
+                                    Termina l'allenamento in corso per aggiungere allenamenti passati.
+                                </p>
+                            )}
                         </div>
                     ) : (
                         selectedWorkouts.map(w =>
@@ -281,7 +333,21 @@ export default function HistoryCalendar({ workouts, onDuplicate, onDelete, onUpd
 
 function WorkoutCard({ w, expandedId, setExpandedId, setDeleteConfirm, onDuplicate }) {
     const isExpanded = expandedId === w.id
-    const totalSets = w.exercises.reduce((s, e) => s + e.sets.filter(st => st.completed).length, 0)
+
+    let totalSets = 0;
+    let totalEmom = 0;
+    w.exercises.forEach(e => {
+        if (e.isEmom) {
+            if (e.emomCompleted) totalEmom++;
+        } else {
+            totalSets += e.sets.filter(st => st.completed).length;
+        }
+    });
+
+    let badgeText = `${totalSets} serie`;
+    if (w.isVideoWorkout) badgeText = '📺 Video';
+    else if (totalSets === 0 && totalEmom > 0) badgeText = `${totalEmom} EMOM`;
+    else if (totalEmom > 0) badgeText = `${totalSets} serie + ${totalEmom} EMOM`;
 
     return (
         <div
@@ -301,7 +367,7 @@ function WorkoutCard({ w, expandedId, setExpandedId, setDeleteConfirm, onDuplica
                     </div>
                 </div>
                 <span className="history-sets-badge">
-                    {w.isVideoWorkout ? '📺 Video' : `${totalSets} serie`}
+                    {badgeText}
                 </span>
             </div>
 
@@ -323,7 +389,7 @@ function WorkoutCard({ w, expandedId, setExpandedId, setDeleteConfirm, onDuplica
                         <div key={ex.id} style={{ marginBottom: 10 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                 <div className="history-exercise-name">{ex.name}</div>
-                                {!ex.isVideo && ex.targetRest && (
+                                {!ex.isVideo && !ex.isEmom && ex.targetRest && (
                                     <span style={{
                                         fontSize: 'var(--text-xs)',
                                         color: 'var(--text-muted)',
