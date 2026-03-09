@@ -199,8 +199,8 @@ export default function ActiveWorkout({
             onClick={handlePauseResume}
             title={paused ? "Riprendi" : "Pausa"}
             style={{
-              borderColor: paused ? 'var(--accent)' : 'var(--border-accent)',
-              color: paused ? 'var(--accent-light)' : 'var(--text-secondary)'
+              borderColor: paused ? 'var(--warning)' : 'var(--border-accent)',
+              color: paused ? 'var(--warning)' : 'var(--text-secondary)'
             }}
           >
             {paused ? (
@@ -221,43 +221,45 @@ export default function ActiveWorkout({
       </div>
 
       {/* Exercise list */}
-      {workout.exercises.map((ex) =>
-        ex.isVideo || ex.videoYt ? (
-          <VideoExerciseCard
-            key={ex.id}
-            exercise={ex}
-            workoutId={workout.id}
-            onToggleSet={onToggleSet}
-            onRemoveExercise={onRemoveExercise}
-            onUpdateNotes={onUpdateExerciseNotes}
-          />
-        ) : ex.isEmom ? (
-          <EmomCard
-            key={ex.id}
-            exercise={ex}
-            workoutId={workout.id}
-            onRemoveExercise={onRemoveExercise}
-            onUpdateEmom={onUpdateEmom}
-            onUpdateNotes={onUpdateExerciseNotes}
-            onEmomPause={handleEmomPause}
-          />
-        ) : (
-          <ExerciseCard
-            key={ex.id}
-            exercise={ex}
-            workoutId={workout.id}
-            onAddSet={onAddSet}
-            onRemoveSet={onRemoveSet}
-            onUpdateSet={onUpdateSet}
-            onToggleSet={onToggleSet}
-            onRemoveExercise={onRemoveExercise}
-            onStartRest={handleStartRest}
-            onUpdateNotes={onUpdateExerciseNotes}
-            onUpdateExerciseRest={onUpdateExerciseRest}
-            activeRestSetId={activeRestSetId}
-          />
+      {
+        workout.exercises.map((ex) =>
+          ex.isVideo || ex.videoYt ? (
+            <VideoExerciseCard
+              key={ex.id}
+              exercise={ex}
+              workoutId={workout.id}
+              onToggleSet={onToggleSet}
+              onRemoveExercise={onRemoveExercise}
+              onUpdateNotes={onUpdateExerciseNotes}
+            />
+          ) : ex.isEmom ? (
+            <EmomCard
+              key={ex.id}
+              exercise={ex}
+              workoutId={workout.id}
+              onRemoveExercise={onRemoveExercise}
+              onUpdateEmom={onUpdateEmom}
+              onUpdateNotes={onUpdateExerciseNotes}
+              onEmomPause={handleEmomPause}
+            />
+          ) : (
+            <ExerciseCard
+              key={ex.id}
+              exercise={ex}
+              workoutId={workout.id}
+              onAddSet={onAddSet}
+              onRemoveSet={onRemoveSet}
+              onUpdateSet={onUpdateSet}
+              onToggleSet={onToggleSet}
+              onRemoveExercise={onRemoveExercise}
+              onStartRest={handleStartRest}
+              onUpdateNotes={onUpdateExerciseNotes}
+              onUpdateExerciseRest={onUpdateExerciseRest}
+              activeRestSetId={activeRestSetId}
+            />
+          )
         )
-      )}
+      }
 
       {/* Session Notes */}
       <div style={{ marginTop: 12, marginBottom: 8 }}>
@@ -280,77 +282,81 @@ export default function ActiveWorkout({
       </button>
 
       {/* Exercise search */}
-      {showSearch && (
-        <ExerciseSearch
-          onSelect={(ex) => onAddExercise(workout.id, ex)}
-          onClose={() => setShowSearch(false)}
-        />
-      )}
+      {
+        showSearch && (
+          <ExerciseSearch
+            onSelect={(ex) => onAddExercise(workout.id, ex)}
+            onClose={() => setShowSearch(false)}
+          />
+        )
+      }
 
       {/* Finish confirm */}
-      {showFinishConfirm && (
-        <div
-          className="modal-overlay"
-          onClick={() => setShowFinishConfirm(false)}
-        >
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-handle" />
-            <div style={{ fontWeight: 700, fontSize: "var(--text-lg)", marginBottom: 8 }}>
-              Termina allenamento?
-            </div>
-            <div style={{ color: "var(--text-secondary)", fontSize: "var(--text-sm)" }}>
-              {totalCompleted} serie completate · {workout.exercises.length}{" "}
-              esercizi · {fmt(elapsed)}
-            </div>
-
-            {workout.exercises.length > 0 && !isIdentical && (
-              <div style={{ marginTop: 'var(--space-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--text-sm)', cursor: 'pointer', color: 'var(--text-primary)' }}>
-                  <input
-                    type="checkbox"
-                    checked={saveAsRoutine}
-                    onChange={(e) => setSaveAsRoutine(e.target.checked)}
-                    style={{ width: 16, height: 16, accentColor: 'var(--accent)' }}
-                  />
-                  <span style={{ fontWeight: 500 }}>Salva come nuova routine</span>
-                </label>
-                {saveAsRoutine && (
-                  <input
-                    type="text"
-                    className="input"
-                    placeholder="Nome routine (es. Workout di oggi)"
-                    value={routineName}
-                    onChange={(e) => setRoutineName(e.target.value)}
-                    style={{ padding: '8px 12px', fontSize: 'var(--text-sm)', marginTop: 4 }}
-                  />
-                )}
+      {
+        showFinishConfirm && (
+          <div
+            className="modal-overlay"
+            onClick={() => setShowFinishConfirm(false)}
+          >
+            <div className="modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-handle" />
+              <div style={{ fontWeight: 700, fontSize: "var(--text-lg)", marginBottom: 8 }}>
+                Termina allenamento?
               </div>
-            )}
+              <div style={{ color: "var(--text-secondary)", fontSize: "var(--text-sm)" }}>
+                {totalCompleted} serie completate · {workout.exercises.length}{" "}
+                esercizi · {fmt(elapsed)}
+              </div>
 
-            <div className="confirm-actions" style={{ marginTop: 'var(--space-4)' }}>
-              <button
-                className="btn btn-secondary"
-                onClick={() => setShowFinishConfirm(false)}
-              >
-                Annulla
-              </button>
-              <button
-                className="btn btn-primary"
-                onClick={() => {
-                  if (saveAsRoutine) {
-                    const finalName = routineName.trim() || `Routine del ${new Date().toLocaleDateString()}`;
-                    if (onCreateRoutine) onCreateRoutine(finalName, workout.exercises);
-                  }
-                  onFinish(workout.id);
-                  setShowFinishConfirm(false);
-                }}
-              >
-                Termina
-              </button>
+              {workout.exercises.length > 0 && !isIdentical && (
+                <div style={{ marginTop: 'var(--space-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--text-sm)', cursor: 'pointer', color: 'var(--text-primary)' }}>
+                    <input
+                      type="checkbox"
+                      checked={saveAsRoutine}
+                      onChange={(e) => setSaveAsRoutine(e.target.checked)}
+                      style={{ width: 16, height: 16, accentColor: 'var(--accent)' }}
+                    />
+                    <span style={{ fontWeight: 500 }}>Salva come nuova routine</span>
+                  </label>
+                  {saveAsRoutine && (
+                    <input
+                      type="text"
+                      className="input"
+                      placeholder="Nome routine (es. Workout di oggi)"
+                      value={routineName}
+                      onChange={(e) => setRoutineName(e.target.value)}
+                      style={{ padding: '8px 12px', fontSize: 'var(--text-sm)', marginTop: 4 }}
+                    />
+                  )}
+                </div>
+              )}
+
+              <div className="confirm-actions" style={{ marginTop: 'var(--space-4)' }}>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => setShowFinishConfirm(false)}
+                >
+                  Annulla
+                </button>
+                <button
+                  className="btn btn-primary"
+                  onClick={() => {
+                    if (saveAsRoutine) {
+                      const finalName = routineName.trim() || `Routine del ${new Date().toLocaleDateString()}`;
+                      if (onCreateRoutine) onCreateRoutine(finalName, workout.exercises);
+                    }
+                    onFinish(workout.id);
+                    setShowFinishConfirm(false);
+                  }}
+                >
+                  Termina
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 }

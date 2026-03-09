@@ -211,6 +211,7 @@ export default function App() {
                     activeWorkout={activeWorkout || todayWorkout}
                     onStartWorkout={handleStartWorkout}
                     onResumeWorkout={handleResumeWorkout}
+                    onExport={handleExport}
                     onImport={() => importRef.current?.click()}
                     theme={theme}
                     onToggleTheme={toggleTheme}
