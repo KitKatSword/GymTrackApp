@@ -22,13 +22,24 @@ function formatTime(totalSeconds) {
  * Given totalElapsed seconds and blocks config, derive the current position.
  */
 function derivePosition(blocks, elapsedSec) {
-    let remaining = elapsedSec;
+    if (elapsedSec < 10) {
+        return {
+            isPrep: true,
+            blockIdx: 0,
+            round: 0,
+            secondsLeft: 10 - elapsedSec,
+            finished: false,
+        };
+    }
+
+    let remaining = elapsedSec - 10;
     for (let bi = 0; bi < blocks.length; bi++) {
         const blockTotalSec = blocks[bi].minutes * 60;
         if (remaining < blockTotalSec) {
             const roundInBlock = Math.floor(remaining / 60); // 0-indexed
             const secInRound = remaining % 60;
             return {
+                isPrep: false,
                 blockIdx: bi,
                 round: roundInBlock + 1, // 1-indexed
                 secondsLeft: 60 - secInRound,
@@ -37,7 +48,7 @@ function derivePosition(blocks, elapsedSec) {
         }
         remaining -= blockTotalSec;
     }
-    return { blockIdx: blocks.length - 1, round: blocks[blocks.length - 1].minutes, secondsLeft: 0, finished: true };
+    return { isPrep: false, blockIdx: blocks.length - 1, round: blocks[blocks.length - 1].minutes, secondsLeft: 0, finished: true };
 }
 
 export default function EmomCard({
@@ -64,9 +75,10 @@ export default function EmomCard({
     const [isFinished, setIsFinished] = useState(exercise.emomCompleted || false);
     const intervalRef = useRef(null);
     const audioCtx = useRef(null);
+    const prevPosRef = useRef(null);
 
     const totalMinutes = blocks.reduce((s, b) => s + b.minutes, 0);
-    const totalSeconds = totalMinutes * 60;
+    const totalSeconds = totalMinutes * 60 + 10; // add 10 seconds prep
     const totalReps = blocks.reduce((s, b) => s + b.minutes * b.reps, 0);
 
     // Calculate elapsed seconds from persisted timestamps
@@ -89,7 +101,7 @@ export default function EmomCard({
     const barProgress = totalSeconds > 0 ? Math.min(1, elapsedSec / totalSeconds) : 0;
     const globalRound = getGlobalRound(pos.blockIdx, pos.round);
     const currentBlock = blocks[pos.blockIdx];
-    const progressPercent = isRunning ? ((60 - pos.secondsLeft) / 60) * 100 : 0;
+    const progressPercent = isRunning ? (pos.isPrep ? ((10 - pos.secondsLeft) / 10) * 100 : ((60 - pos.secondsLeft) / 60) * 100) : 0;
 
     // Sync blocks/weight/timer changes to parent
     const syncToParent = useCallback(
@@ -101,22 +113,32 @@ export default function EmomCard({
         [onUpdateEmom, workoutId, exercise.id]
     );
 
-    const playBeep = (isEnd = false) => {
+    const playSound = (type = 'countdown') => {
         try {
             if (!audioCtx.current) {
                 audioCtx.current = new (window.AudioContext || window.webkitAudioContext)();
             }
             const ctx = audioCtx.current;
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.frequency.value = isEnd ? 880 : 660;
-            osc.type = "sine";
-            gain.gain.setValueAtTime(0.3, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + (isEnd ? 0.5 : 0.15));
-            osc.start(ctx.currentTime);
-            osc.stop(ctx.currentTime + (isEnd ? 0.5 : 0.15));
+            const playNote = (freq, duration, waveType = 'sine') => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.frequency.value = freq;
+                osc.type = waveType;
+                gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + duration);
+            };
+
+            if (type === 'countdown') {
+                playNote(440, 0.15); // standard short beep
+            } else if (type === 'start') {
+                playNote(880, 0.5, 'triangle'); // high pitch start beep
+            } else if (type === 'end') {
+                playNote(300, 0.8, 'sawtooth'); // lower pitch end beep
+            }
         } catch {
             // Audio not available
         }
@@ -133,14 +155,23 @@ export default function EmomCard({
             const elapsed = getElapsedSec();
             const p = derivePosition(blocks, elapsed);
 
+            const prevP = prevPosRef.current;
+            prevPosRef.current = p;
+
             // Beep at countdown
             if (p.secondsLeft <= 3 && p.secondsLeft > 0 && !p.finished) {
-                playBeep(false);
+                playSound('countdown');
+            } else if (prevP && !p.finished) {
+                if (p.round > prevP.round || (!p.isPrep && prevP.isPrep)) {
+                    playSound('start');
+                }
             }
 
             // Check completion
             if (p.finished) {
-                playBeep(true);
+                if (prevP && !prevP.finished) {
+                    playSound('end');
+                }
                 clearInterval(intervalRef.current);
                 setIsFinished(true);
                 syncToParent({
@@ -369,8 +400,12 @@ export default function EmomCard({
                             />
                         </svg>
                         <div className="emom-timer-text">
-                            <div className="emom-timer-seconds">{formatTime(pos.secondsLeft)}</div>
-                            <div className="emom-timer-round">Round {globalRound}/{totalMinutes}</div>
+                            <div className="emom-timer-seconds" style={{ color: pos.isPrep ? 'var(--warning)' : 'inherit' }}>
+                                {pos.isPrep ? pos.secondsLeft : formatTime(pos.secondsLeft)}
+                            </div>
+                            <div className="emom-timer-round" style={{ color: pos.isPrep ? 'var(--warning)' : 'inherit' }}>
+                                {pos.isPrep ? "Preparazione" : `Round ${globalRound}/${totalMinutes}`}
+                            </div>
                         </div>
                     </div>
 
@@ -381,8 +416,7 @@ export default function EmomCard({
                             </div>
                         )}
                         <div className="emom-current-reps">
-                            {currentBlock.reps} reps
-                            {weight && ` @ ${weight} kg`}
+                            {pos.isPrep ? "Preparati..." : `${currentBlock.reps} reps${weight ? ` @ ${weight} kg` : ''}`}
                         </div>
                         {isPaused && (
                             <div className="emom-paused-label">In Pausa</div>
