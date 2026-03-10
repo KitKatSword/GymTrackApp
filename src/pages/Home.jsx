@@ -1,12 +1,17 @@
 import { useRef, useState } from 'react'
 import ActivityHeatmap from '../components/ActivityHeatmap'
 
-export default function Home({ stats, workouts, activeWorkout, onStartWorkout, onResumeWorkout, onExport, onImport, theme, onToggleTheme }) {
+export default function Home({ stats, workouts, activeWorkout, onStartWorkout, onResumeWorkout, onExport, onImport, theme, onToggleTheme, routines = [], onStartFromRoutine }) {
     const [showBackupModal, setShowBackupModal] = useState(false)
+    const [expandedRoutineId, setExpandedRoutineId] = useState(null)
+    const longPressTimer = useRef(null)
     const today = new Date()
     const dayNames = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato']
     const monthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
         'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre']
+
+    const recentRoutineNames = [...new Set(workouts.filter(w => w.routineName).map(w => w.routineName))].slice(0, 3);
+    const recentRoutines = recentRoutineNames.map(name => routines.find(r => r.name === name)).filter(Boolean);
 
     return (
         <div className="page">
@@ -56,8 +61,8 @@ export default function Home({ stats, workouts, activeWorkout, onStartWorkout, o
             {/* Heatmap */}
             <ActivityHeatmap workouts={workouts} />
 
-            {activeWorkout && (
-                <div className="active-workout-card">
+            {activeWorkout ? (
+                <div className="active-workout-card" style={{ marginTop: 'var(--space-4)' }}>
                     <div className="active-workout-card-header">
                         <div>
                             <div className="active-workout-card-title">Allenamento in corso</div>
@@ -74,6 +79,117 @@ export default function Home({ stats, workouts, activeWorkout, onStartWorkout, o
                         Continua →
                     </button>
                 </div>
+            ) : (
+                <>
+                    {/* Azioni Rapide */}
+                    <div style={{ marginTop: 'var(--space-5)', marginBottom: 'var(--space-5)' }}>
+                        <button
+                            className="btn btn-full"
+                            onClick={onStartWorkout}
+                            style={{
+                                padding: 'var(--space-4)',
+                                fontSize: 'var(--text-base)',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                backgroundColor: 'var(--bg-card)',
+                                color: 'var(--text-primary)',
+                                border: '1px solid var(--border)',
+                                cursor: 'pointer',
+                                transition: 'all var(--transition-fast)'
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent)'}
+                            onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.backgroundColor = 'var(--bg-card)' }}
+                            onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.98)'; e.currentTarget.style.backgroundColor = 'var(--bg-card-hover)' }}
+                            onMouseUp={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.backgroundColor = 'var(--bg-card)' }}
+                        >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div style={{ width: 44, height: 44, borderRadius: '50%', backgroundColor: 'var(--accent-dim)', color: 'var(--accent-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="12" y1="5" x2="12" y2="19" />
+                                        <line x1="5" y1="12" x2="19" y2="12" />
+                                    </svg>
+                                </div>
+                                <span style={{ fontWeight: 700 }}>Allenamento Libero</span>
+                            </div>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="5" y1="12" x2="19" y2="12" />
+                                <polyline points="12 5 19 12 12 19" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    {/* Routine Recenti */}
+                    {recentRoutines.length > 0 && (
+                        <div style={{ marginBottom: 'var(--space-5)' }}>
+                            <div className="section-label" style={{ marginBottom: 'var(--space-3)' }}>Fatte di recente</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                                {recentRoutines.map(routine => {
+                                    const isExpanded = expandedRoutineId === routine.id;
+                                    return (
+                                        <div
+                                            key={routine.id}
+                                            className="routine-card"
+                                            style={{ borderLeft: `5px solid ${routine.color || 'var(--accent)'}`, padding: '16px', margin: 0, transition: 'all var(--transition-fast)', backgroundColor: 'var(--bg-card)', WebkitUserSelect: 'none', userSelect: 'none' }}
+                                            onContextMenu={e => { e.preventDefault(); e.stopPropagation(); }}
+                                            onPointerDown={e => {
+                                                e.currentTarget.style.transform = 'scale(0.98)';
+                                                e.currentTarget.style.backgroundColor = 'var(--bg-card-hover)';
+                                                longPressTimer.current = setTimeout(() => {
+                                                    setExpandedRoutineId(prev => prev === routine.id ? null : routine.id);
+                                                    longPressTimer.current = null;
+                                                }, 500);
+                                            }}
+                                            onPointerUp={e => {
+                                                e.currentTarget.style.transform = '';
+                                                e.currentTarget.style.backgroundColor = 'var(--bg-card)';
+                                                if (longPressTimer.current) {
+                                                    clearTimeout(longPressTimer.current);
+                                                    longPressTimer.current = null;
+                                                    // Se non è stato un long press e se non è espanso (o anche se espanso permettiamo start rapido cliccando alto) tranne se cliccano specificamente una cosa dentro 
+                                                    onStartFromRoutine(routine);
+                                                }
+                                            }}
+                                            onPointerCancel={e => {
+                                                e.currentTarget.style.transform = '';
+                                                e.currentTarget.style.backgroundColor = 'var(--bg-card)';
+                                                if (longPressTimer.current) {
+                                                    clearTimeout(longPressTimer.current);
+                                                    longPressTimer.current = null;
+                                                }
+                                            }}
+                                        >
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <div>
+                                                    <div className="routine-card-title" style={{ fontSize: 'var(--text-md)', marginBottom: 4 }}>{routine.name}</div>
+                                                    <div className="routine-card-meta">
+                                                        {routine.exercises.length} esercizi · {routine.exercises.reduce((s, e) => s + e.setsCount, 0)} serie
+                                                    </div>
+                                                </div>
+                                                <div style={{ width: 36, height: 36, borderRadius: '50%', backgroundColor: 'var(--bg-input)', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+                                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                                        <polygon points="5 3 19 12 5 21 5 3" />
+                                                    </svg>
+                                                </div>
+                                            </div>
+
+                                            {/* Preview Esercizi */}
+                                            {isExpanded && (
+                                                <div style={{ marginTop: 'var(--space-3)', borderTop: '1px solid var(--border)', paddingTop: 'var(--space-3)', animation: 'slideDown 0.2s ease', pointerEvents: 'none' }}>
+                                                    <div className="routine-card-tags">
+                                                        {routine.exercises.map((ex, i) => (
+                                                            <span key={i} className="history-tag">{ex.name}</span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </div>
+                    )}
+                </>
             )}
 
 

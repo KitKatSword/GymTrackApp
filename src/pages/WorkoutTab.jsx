@@ -34,6 +34,7 @@ export default function WorkoutTab({
     const [expandedId, setExpandedId] = useState(null)
     const [completedVideos, setCompletedVideos] = useState([])
     const [selectedVideo, setSelectedVideo] = useState(null)
+    const [showAllRoutines, setShowAllRoutines] = useState(false)
 
     useEffect(() => {
         try {
@@ -83,28 +84,18 @@ export default function WorkoutTab({
         <div className="page" style={{ paddingBottom: 'calc(var(--nav-height) + var(--safe-bottom) + var(--space-6) + var(--rest-bar-height, 0px))' }}>
             <div className="page-header">
                 <div className="page-title">Allenamento</div>
-                <div className="page-subtitle">Avvia o pianifica i tuoi workout</div>
+                <div className="page-subtitle">Crea e gestisci i tuoi workout</div>
             </div>
 
             {/* Quick Start Empty Workout */}
-            {!showCreate && (
-                hasActiveWorkout ? (
-                    <button
-                        className="btn btn-full"
-                        onClick={onResumeWorkout}
-                        style={{ marginBottom: 'var(--space-6)', backgroundColor: 'var(--success)', borderColor: 'var(--success)', color: 'white' }}
-                    >
-                        Riprendi Allenamento in Corso
-                    </button>
-                ) : (
-                    <button
-                        className="btn btn-start-workout btn-full"
-                        onClick={onStartEmpty}
-                        style={{ marginBottom: 'var(--space-6)' }}
-                    >
-                        Inizia Allenamento Vuoto
-                    </button>
-                )
+            {!showCreate && hasActiveWorkout && (
+                <button
+                    className="btn btn-full"
+                    onClick={onResumeWorkout}
+                    style={{ marginBottom: 'var(--space-6)', backgroundColor: 'var(--success)', borderColor: 'var(--success)', color: 'white' }}
+                >
+                    Riprendi Allenamento in Corso
+                </button>
             )}
 
             {/* Routines Section Header */}
@@ -229,7 +220,7 @@ export default function WorkoutTab({
                 </div>
             ) : (
                 <>
-                    {routines.map(routine => {
+                    {routines.slice(0, 4).map(routine => {
                         const isExpanded = expandedId === routine.id
                         const totalSets = routine.exercises.reduce((s, e) => s + e.setsCount, 0)
                         return (
@@ -242,7 +233,7 @@ export default function WorkoutTab({
                                         </div>
                                     </div>
                                     <button
-                                        className="btn btn-primary btn-sm"
+                                        className="btn"
                                         onClick={(e) => {
                                             e.stopPropagation()
                                             if (hasActiveWorkout) {
@@ -251,14 +242,25 @@ export default function WorkoutTab({
                                                 onStartFromRoutine(routine)
                                             }
                                         }}
+                                        onPointerDown={e => { e.currentTarget.style.transform = 'scale(0.88)'; e.currentTarget.style.backgroundColor = 'var(--bg-card-hover)' }}
+                                        onPointerUp={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.backgroundColor = 'var(--bg-input)' }}
+                                        onPointerEnter={e => e.currentTarget.style.backgroundColor = 'var(--bg-card-hover)'}
+                                        onPointerLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.backgroundColor = 'var(--bg-input)' }}
                                         style={{
-                                            minHeight: 34,
-                                            padding: '0 14px',
-                                            opacity: hasActiveWorkout ? 0.5 : 1,
-                                            cursor: hasActiveWorkout ? 'not-allowed' : 'pointer'
+                                            width: 44, height: 28, padding: 0, borderRadius: 99,
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            backgroundColor: 'var(--bg-input)',
+                                            border: 'none',
+                                            color: 'var(--text-secondary)',
+                                            opacity: hasActiveWorkout ? 0.4 : 1,
+                                            cursor: hasActiveWorkout ? 'not-allowed' : 'pointer',
+                                            transition: 'transform 0.15s ease, background-color 0.15s ease',
+                                            flexShrink: 0,
                                         }}
                                     >
-                                        Inizia
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{ marginLeft: 2 }}>
+                                            <polygon points="5 3 19 12 5 21 5 3" />
+                                        </svg>
                                     </button>
                                 </div>
 
@@ -315,7 +317,138 @@ export default function WorkoutTab({
                             </div>
                         )
                     })}
+                    {routines.length > 4 && !showCreate && (
+                        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 4 }}>
+                            <button
+                                onClick={() => setShowAllRoutines(true)}
+                                style={{ background: 'none', border: 'none', padding: '6px 20px', cursor: 'pointer', color: 'var(--text-muted)', transition: 'color 0.15s ease' }}
+                                onPointerEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
+                                onPointerLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+                            >
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="6 9 12 15 18 9" />
+                                </svg>
+                            </button>
+                        </div>
+                    )}
                 </>
+            )}
+
+            {/* Modal All Routines */}
+            {showAllRoutines && (
+                <div className="modal-overlay" onClick={() => setShowAllRoutines(false)} style={{ alignItems: 'stretch', justifyContent: 'center' }}>
+                    <div className="modal" onClick={e => e.stopPropagation()} style={{ maxHeight: '92vh', height: 'auto', display: 'flex', flexDirection: 'column', marginTop: 'auto', borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0', maxWidth: '100%', width: '100%' }}>
+                        <div className="modal-handle" />
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-4)' }}>
+                            <div style={{ fontWeight: 700, fontSize: 'var(--text-lg)' }}>Tutte le Routine</div>
+                            <button className="btn" style={{ padding: '6px', background: 'transparent', border: 'none', color: 'var(--text-secondary)' }} onClick={() => setShowAllRoutines(false)}>
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div style={{ flex: 1, overflowY: 'auto', margin: '0 calc(-1 * var(--space-5))', padding: '0 var(--space-5)', paddingBottom: 'var(--space-4)' }}>
+                            {routines.map(routine => {
+                                const isExpanded = expandedId === routine.id
+                                const totalSets = routine.exercises.reduce((s, e) => s + e.setsCount, 0)
+                                return (
+                                    <div key={routine.id} className="routine-card" style={{ borderLeft: `5px solid ${routine.color || 'var(--border)'}` }} onClick={() => setExpandedId(isExpanded ? null : routine.id)}>
+                                        <div className="routine-card-header">
+                                            <div>
+                                                <div className="routine-card-title">{routine.name}</div>
+                                                <div className="routine-card-meta">
+                                                    {routine.exercises.length} esercizi · {totalSets} serie
+                                                </div>
+                                            </div>
+                                            <button
+                                                className="btn"
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    if (hasActiveWorkout) {
+                                                        alert("Hai già un allenamento in corso. Terminalo prima di iniziarne uno nuovo.")
+                                                    } else {
+                                                        setShowAllRoutines(false)
+                                                        onStartFromRoutine(routine)
+                                                    }
+                                                }}
+                                                onPointerDown={e => { e.currentTarget.style.transform = 'scale(0.88)'; e.currentTarget.style.backgroundColor = 'var(--bg-card-hover)' }}
+                                                onPointerUp={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.backgroundColor = 'var(--bg-input)' }}
+                                                onPointerEnter={e => e.currentTarget.style.backgroundColor = 'var(--bg-card-hover)'}
+                                                onPointerLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.backgroundColor = 'var(--bg-input)' }}
+                                                style={{
+                                                    width: 44, height: 28, padding: 0, borderRadius: 99,
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                    backgroundColor: 'var(--bg-input)',
+                                                    border: 'none',
+                                                    color: 'var(--text-secondary)',
+                                                    opacity: hasActiveWorkout ? 0.4 : 1,
+                                                    cursor: hasActiveWorkout ? 'not-allowed' : 'pointer',
+                                                    transition: 'transform 0.15s ease, background-color 0.15s ease',
+                                                    flexShrink: 0,
+                                                }}
+                                            >
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{ marginLeft: 2 }}>
+                                                    <polygon points="5 3 19 12 5 21 5 3" />
+                                                </svg>
+                                            </button>
+                                        </div>
+
+                                        <div className="routine-card-tags">
+                                            {routine.exercises.map((ex, i) => (
+                                                <span key={i} className="history-tag">{ex.name}</span>
+                                            ))}
+                                        </div>
+
+                                        {isExpanded && (
+                                            <div className="history-expanded">
+                                                {routine.exercises.map((ex, i) => (
+                                                    <div key={i} className="routine-detail-item">
+                                                        <span className="routine-detail-name">{ex.name}</span>
+                                                        <span className="routine-detail-sets">
+                                                            {ex.setsCount} serie
+                                                            {ex.targetRest && ex.targetRest !== 90 && (
+                                                                <span style={{ marginLeft: 6, opacity: 0.7 }}>
+                                                                    · ⏱ {Math.floor(ex.targetRest / 60)}:{(ex.targetRest % 60).toString().padStart(2, '0')}
+                                                                </span>
+                                                            )}
+                                                        </span>
+                                                    </div>
+                                                ))}
+
+                                                <div className="history-actions" style={{ marginTop: 12 }}>
+                                                    <button
+                                                        className="btn btn-secondary btn-sm"
+                                                        style={{ flex: 1 }}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            setEditingRoutineId(routine.id)
+                                                            setRoutineName(routine.name)
+                                                            setRoutineColor(routine.color || '#8b5cf6')
+                                                            setSelectedExercises([...routine.exercises])
+                                                            setShowCreate(true)
+                                                            setShowAllRoutines(false)
+                                                            window.scrollTo({ top: 0, behavior: 'smooth' })
+                                                        }}
+                                                    >
+                                                        Modifica
+                                                    </button>
+                                                    <button
+                                                        className="btn btn-sm"
+                                                        style={{ color: 'var(--danger)', background: 'var(--danger-bg)', border: '1px solid var(--danger-bg)', flex: 1 }}
+                                                        onClick={(e) => { e.stopPropagation(); setDeleteConfirm(routine.id) }}
+                                                    >
+                                                        Elimina Routine
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </div>
+                </div>
             )}
 
             {/* Completed Videos Carousel inside Workout */}

@@ -216,6 +216,8 @@ export default function App() {
                     onImport={() => importRef.current?.click()}
                     theme={theme}
                     onToggleTheme={toggleTheme}
+                    routines={routineActions.routines}
+                    onStartFromRoutine={handleStartFromRoutine}
                 />
             )}
 
