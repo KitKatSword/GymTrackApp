@@ -755,6 +755,169 @@ ol {
     margin-top: var(--space-1);
 }
 
+/* ===== Heatmap ===== */
+.heatmap-header {
+    margin-bottom: var(--space-3);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.heatmap-title {
+    font-size: var(--text-md);
+    font-weight: 700;
+}
+
+.heatmap-subtitle {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.heatmap-legend {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    color: var(--text-muted);
+}
+
+.heatmap-legend-label {
+    margin: 0 4px;
+}
+
+.heatmap-container-wrapper {
+    overflow-x: auto;
+    padding-bottom: var(--space-2);
+    margin: 0 -12px;
+    padding: 0 12px 12px 12px;
+}
+
+.heatmap-container-wrapper::-webkit-scrollbar {
+    height: 4px;
+}
+
+.heatmap-container-wrapper::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+}
+
+.heatmap-container {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.heatmap-days-labels {
+    position: relative;
+    width: 26px;
+    min-width: 26px;
+    height: 128px;
+}
+
+.heatmap-label-1 {
+    position: absolute;
+    top: 18px;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.heatmap-label-3 {
+    position: absolute;
+    top: 56px;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.heatmap-label-5 {
+    position: absolute;
+    top: 94px;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.heatmap-grid {
+    display: flex;
+    gap: 5px;
+}
+
+.heatmap-column {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.heatmap-cell {
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    background: var(--bg-input);
+    transition: transform var(--transition-fast), background var(--transition-fast);
+    box-sizing: border-box;
+}
+
+.heatmap-cell:not(.future):hover {
+    transform: scale(1.15);
+    z-index: 2;
+}
+
+.heatmap-cell.future {
+    background: transparent;
+}
+
+/* Light mode support for the heatmap cells */
+[data-theme="light"] .heatmap-0 {
+    background: #e5e7eb;
+    border: 1px solid transparent;
+    box-sizing: border-box;
+}
+
+[data-theme="light"] .heatmap-1 {
+    background: #dcfce7;
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    box-sizing: border-box;
+}
+
+[data-theme="light"] .heatmap-2 {
+    background: #86efac;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    box-sizing: border-box;
+}
+
+[data-theme="light"] .heatmap-3 {
+    background: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.4);
+    box-sizing: border-box;
+}
+
+[data-theme="light"] .heatmap-4 {
+    background: #22c55e;
+    border: 1px solid rgba(34, 197, 94, 0.5);
+    box-sizing: border-box;
+}
+
+.heatmap-0 {
+    background: var(--bg-input);
+}
+
+.heatmap-1 {
+    background: rgba(34, 197, 94, 0.25);
+}
+
+.heatmap-2 {
+    background: rgba(34, 197, 94, 0.50);
+}
+
+.heatmap-3 {
+    background: rgba(34, 197, 94, 0.75);
+}
+
+.heatmap-4 {
+    background: var(--success);
+}
+
 /* ===== Stat Grid ===== */
 .stat-grid {
     display: grid;
@@ -1213,9 +1376,38 @@ ol {
     font-weight: 800;
 }
 
-/* Legacy calendar styling removed in favor of inline modern circular styling */
+.calendar-day-btn.has-workout,
+.calendar-day-btn.selected {
+    color: var(--day-color);
+}
 
+.calendar-day-circle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    z-index: 0;
 
+    background-color: color-mix(in srgb, var(--day-color) 25%, transparent);
+    border: 1.5px solid color-mix(in srgb, var(--day-color) 40%, transparent);
+    transition: all var(--transition-fast);
+}
+
+.calendar-day-btn.selected .calendar-day-circle {
+    width: 90%;
+    border-color: var(--day-color);
+    background-color: color-mix(in srgb, var(--day-color) 40%, transparent);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--day-color) 30%, transparent);
+}
+
+/* Optional: Slight color boost for dark mode text to pop better */
+[data-theme="dark"] .calendar-day-btn.has-workout,
+[data-theme="dark"] .calendar-day-btn.selected {
+    color: color-mix(in srgb, var(--day-color) 85%, white);
+}
 
 /* ===== Dividers ===== */
 .divider {

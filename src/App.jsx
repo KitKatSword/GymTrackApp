@@ -208,6 +208,7 @@ export default function App() {
             {activeTab === 'home' && (
                 <Home
                     stats={stats}
+                    workouts={workouts}
                     activeWorkout={activeWorkout || todayWorkout}
                     onStartWorkout={handleStartWorkout}
                     onResumeWorkout={handleResumeWorkout}
