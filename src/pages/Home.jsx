@@ -10,7 +10,7 @@ export default function Home({ stats, workouts, activeWorkout, onStartWorkout, o
     const monthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
         'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre']
 
-    const recentRoutineNames = [...new Set(workouts.filter(w => w.routineName).map(w => w.routineName))].slice(0, 3);
+    const recentRoutineNames = [...new Set(workouts.filter(w => w.routineName).map(w => w.routineName))].slice(0, 4);
     const recentRoutines = recentRoutineNames.map(name => routines.find(r => r.name === name)).filter(Boolean);
 
     return (
@@ -130,57 +130,55 @@ export default function Home({ stats, workouts, activeWorkout, onStartWorkout, o
                                         <div
                                             key={routine.id}
                                             className="routine-card"
-                                            style={{ borderLeft: `5px solid ${routine.color || 'var(--accent)'}`, padding: '16px', margin: 0, transition: 'all var(--transition-fast)', backgroundColor: 'var(--bg-card)', WebkitUserSelect: 'none', userSelect: 'none' }}
-                                            onContextMenu={e => { e.preventDefault(); e.stopPropagation(); }}
-                                            onPointerDown={e => {
-                                                e.currentTarget.style.transform = 'scale(0.98)';
-                                                e.currentTarget.style.backgroundColor = 'var(--bg-card-hover)';
-                                                longPressTimer.current = setTimeout(() => {
-                                                    setExpandedRoutineId(prev => prev === routine.id ? null : routine.id);
-                                                    longPressTimer.current = null;
-                                                }, 500);
-                                            }}
-                                            onPointerUp={e => {
-                                                e.currentTarget.style.transform = '';
-                                                e.currentTarget.style.backgroundColor = 'var(--bg-card)';
-                                                if (longPressTimer.current) {
-                                                    clearTimeout(longPressTimer.current);
-                                                    longPressTimer.current = null;
-                                                    // Se non è stato un long press e se non è espanso (o anche se espanso permettiamo start rapido cliccando alto) tranne se cliccano specificamente una cosa dentro 
-                                                    onStartFromRoutine(routine);
-                                                }
-                                            }}
-                                            onPointerCancel={e => {
-                                                e.currentTarget.style.transform = '';
-                                                e.currentTarget.style.backgroundColor = 'var(--bg-card)';
-                                                if (longPressTimer.current) {
-                                                    clearTimeout(longPressTimer.current);
-                                                    longPressTimer.current = null;
-                                                }
-                                            }}
+                                            style={{ borderLeft: `5px solid ${routine.color || 'var(--border)'}`, cursor: 'pointer' }}
+                                            onClick={() => setExpandedRoutineId(isExpanded ? null : routine.id)}
                                         >
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <div className="routine-card-header">
                                                 <div>
-                                                    <div className="routine-card-title" style={{ fontSize: 'var(--text-md)', marginBottom: 4 }}>{routine.name}</div>
+                                                    <div className="routine-card-title">{routine.name}</div>
                                                     <div className="routine-card-meta">
                                                         {routine.exercises.length} esercizi · {routine.exercises.reduce((s, e) => s + e.setsCount, 0)} serie
                                                     </div>
                                                 </div>
-                                                <div style={{ width: 36, height: 36, borderRadius: '50%', backgroundColor: 'var(--bg-input)', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-                                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        if (activeWorkout) {
+                                                            alert("Hai già un allenamento in corso. Terminalo prima di iniziarne uno nuovo.")
+                                                        } else {
+                                                            onStartFromRoutine(routine)
+                                                        }
+                                                    }}
+                                                    className={activeWorkout ? "play-btn-round disabled" : "play-btn-round"}
+                                                >
+                                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{ marginLeft: 3 }}>
                                                         <polygon points="5 3 19 12 5 21 5 3" />
                                                     </svg>
-                                                </div>
+                                                </button>
                                             </div>
 
-                                            {/* Preview Esercizi */}
+                                            {/* Exercise preview tags */}
+                                            <div className="routine-card-tags">
+                                                {routine.exercises.map((ex, i) => (
+                                                    <span key={i} className="history-tag">{ex.name}</span>
+                                                ))}
+                                            </div>
+
                                             {isExpanded && (
-                                                <div style={{ marginTop: 'var(--space-3)', borderTop: '1px solid var(--border)', paddingTop: 'var(--space-3)', animation: 'slideDown 0.2s ease', pointerEvents: 'none' }}>
-                                                    <div className="routine-card-tags">
-                                                        {routine.exercises.map((ex, i) => (
-                                                            <span key={i} className="history-tag">{ex.name}</span>
-                                                        ))}
-                                                    </div>
+                                                <div className="history-expanded">
+                                                    {routine.exercises.map((ex, i) => (
+                                                        <div key={i} className="routine-detail-item">
+                                                            <span className="routine-detail-name">{ex.name}</span>
+                                                            <span className="routine-detail-sets">
+                                                                {ex.setsCount} serie
+                                                                {ex.targetRest && ex.targetRest !== 90 && (
+                                                                    <span style={{ marginLeft: 6, opacity: 0.7 }}>
+                                                                        · ⏱ {Math.floor(ex.targetRest / 60)}:{(ex.targetRest % 60).toString().padStart(2, '0')}
+                                                                    </span>
+                                                                )}
+                                                            </span>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             )}
                                         </div>

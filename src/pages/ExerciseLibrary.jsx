@@ -57,19 +57,36 @@ export default function ExerciseLibrary() {
                 <div className="page-subtitle">Libreria esercizi personalizzati</div>
             </div>
 
-            {/* Create button */}
-            <button
-                className="btn btn-secondary btn-full"
-                onClick={() => setShowForm(!showForm)}
-                style={{ marginBottom: 'var(--space-4)' }}
-            >
-                {showForm ? '✕ Chiudi' : '+ Nuovo esercizio'}
-            </button>
-
             {/* Create form */}
-            {showForm && (
-                <div className="create-form" style={{ marginBottom: 'var(--space-4)', marginTop: 0 }}>
-                    <div className="create-form-title">Nuovo esercizio</div>
+            {!showForm ? (
+                <button
+                    className="create-exercise-toggle"
+                    onClick={() => setShowForm(true)}
+                    style={{ marginBottom: 'var(--space-4)' }}
+                >
+                    + Nuovo esercizio personalizzato
+                </button>
+            ) : (
+                <div className="create-form" style={{ marginBottom: 'var(--space-4)', marginTop: 0, position: 'relative' }}>
+                    <button
+                        onClick={() => setShowForm(false)}
+                        style={{
+                            position: 'absolute',
+                            top: '16px',
+                            right: '16px',
+                            background: 'transparent',
+                            border: 'none',
+                            color: 'var(--text-muted)',
+                            padding: '4px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}
+                    >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                    <div className="create-form-title" style={{ paddingRight: '32px' }}>Nuovo esercizio</div>
 
                     <input
                         className="input"
