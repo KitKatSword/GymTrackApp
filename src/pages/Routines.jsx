@@ -1,14 +1,12 @@
-import { useState, useMemo, useEffect } from 'react'
-import { getAllExercises, PARAM_TYPES } from '../data/exercises'
+import { useState } from 'react'
 import ExerciseSearch from '../components/ExerciseSearch'
 import VideoPlayer from '../components/VideoPlayer'
+import CompletedVideosCarousel from '../components/CompletedVideosCarousel'
+import RoutineBuilderForm from '../components/RoutineBuilderForm'
+import RoutineCard from '../components/RoutineCard'
+import RoutineDetails from '../components/RoutineDetails'
 import { ROUTINE_COLORS } from '../constants/colors'
-
-function abbr(name) {
-    const words = name.trim().split(/\s+/)
-    if (words.length === 1) return words[0].substring(0, 2).toUpperCase()
-    return (words[0][0] + words[1][0]).toUpperCase()
-}
+import { loadCompletedVideos } from '../utils/videos'
 
 export default function Routines({ routines, onCreateRoutine, onDeleteRoutine, onUpdateRoutine, onStartFromRoutine, onLogVideo }) {
     const [showCreate, setShowCreate] = useState(false)
@@ -19,20 +17,25 @@ export default function Routines({ routines, onCreateRoutine, onDeleteRoutine, o
     const [showExercisePicker, setShowExercisePicker] = useState(false)
     const [deleteConfirm, setDeleteConfirm] = useState(null)
     const [expandedId, setExpandedId] = useState(null)
-    const [completedVideos, setCompletedVideos] = useState([])
+    const [completedVideos] = useState(loadCompletedVideos)
     const [selectedVideo, setSelectedVideo] = useState(null)
 
-    useEffect(() => {
-        try {
-            const raw = localStorage.getItem('gymtrack_completed_videos')
-            if (raw) {
-                const parsed = JSON.parse(raw)
-                // Filter out the old string items just in case 
-                const valid = parsed.filter(v => typeof v === 'object' && v.yt)
-                setCompletedVideos(valid)
-            }
-        } catch { }
-    }, [])
+    const resetForm = () => {
+        setRoutineName('')
+        setRoutineColor(ROUTINE_COLORS[5])
+        setSelectedExercises([])
+        setEditingRoutineId(null)
+        setShowCreate(false)
+    }
+
+    const startEditingRoutine = (routine) => {
+        setEditingRoutineId(routine.id)
+        setRoutineName(routine.name)
+        setRoutineColor(routine.color || ROUTINE_COLORS[5])
+        setSelectedExercises([...routine.exercises])
+        setShowCreate(true)
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
 
     const handleAddExercise = (exercise) => {
         setSelectedExercises(prev => [...prev, { ...exercise, setsCount: 3 }])
@@ -59,11 +62,7 @@ export default function Routines({ routines, onCreateRoutine, onDeleteRoutine, o
         } else {
             onCreateRoutine(routineName.trim(), selectedExercises, routineColor)
         }
-        setRoutineName('')
-        setRoutineColor(ROUTINE_COLORS[5])
-        setSelectedExercises([])
-        setEditingRoutineId(null)
-        setShowCreate(false)
+        resetForm()
     }
 
     return (
@@ -78,11 +77,7 @@ export default function Routines({ routines, onCreateRoutine, onDeleteRoutine, o
                 className="btn btn-secondary btn-full"
                 onClick={() => {
                     if (showCreate) {
-                        setShowCreate(false)
-                        setEditingRoutineId(null)
-                        setRoutineName('')
-                        setSelectedExercises([])
-                        setRoutineColor(ROUTINE_COLORS[5])
+                        resetForm()
                     } else {
                         setShowCreate(true)
                     }
@@ -94,86 +89,19 @@ export default function Routines({ routines, onCreateRoutine, onDeleteRoutine, o
 
             {/* Create form */}
             {showCreate && (
-                <div className="create-form" style={{ marginBottom: 'var(--space-4)', marginTop: 0 }}>
-                    <div className="create-form-title">{editingRoutineId ? 'Modifica Routine' : 'Nuova Routine'}</div>
-
-                    <input
-                        className="input"
-                        type="text"
-                        placeholder="Nome routine (es. Push Day, Gambe...)"
-                        value={routineName}
-                        onChange={(e) => setRoutineName(e.target.value)}
-                        style={{ marginBottom: 'var(--space-3)' }}
-                    />
-
-                    {/* Color Picker */}
-                    <div style={{ marginBottom: 'var(--space-4)' }}>
-                        <div className="create-form-section-label" style={{ marginBottom: 8 }}>Colore Etichetta</div>
-                        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                            {ROUTINE_COLORS.map(color => (
-                                <button
-                                    key={color}
-                                    type="button"
-                                    onClick={() => setRoutineColor(color)}
-                                    style={{
-                                        width: 32,
-                                        height: 32,
-                                        borderRadius: '50%',
-                                        backgroundColor: color,
-                                        border: routineColor === color ? '2px solid white' : '2px solid transparent',
-                                        boxShadow: routineColor === color ? `0 0 0 2px ${color}` : 'none',
-                                        cursor: 'pointer',
-                                        transition: 'all 0.2s',
-                                        padding: 0
-                                    }}
-                                />
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Selected exercises */}
-                    {selectedExercises.length > 0 && (
-                        <div style={{ marginBottom: 'var(--space-3)' }}>
-                            <div className="create-form-section-label">Esercizi ({selectedExercises.length})</div>
-                            {selectedExercises.map((ex, idx) => (
-                                <div key={idx} className="routine-exercise-item">
-                                    <div className="routine-exercise-icon">
-                                        {ex.image ? (
-                                            <img src={ex.image} alt="" className="routine-exercise-img" />
-                                        ) : abbr(ex.name)}
-                                    </div>
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{ex.name}</div>
-                                        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{ex.category}</div>
-                                    </div>
-                                    <div className="routine-sets-control">
-                                        <button className="routine-sets-btn" onClick={() => handleSetCount(idx, ex.setsCount - 1)}>−</button>
-                                        <span className="routine-sets-value">{ex.setsCount}</span>
-                                        <button className="routine-sets-btn" onClick={() => handleSetCount(idx, ex.setsCount + 1)}>+</button>
-                                    </div>
-                                    <button className="exercise-delete-btn" onClick={() => handleRemoveExercise(idx)}>✕</button>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-
-                    <button
-                        className="btn btn-secondary btn-full btn-sm"
-                        onClick={() => setShowExercisePicker(true)}
-                        style={{ marginBottom: 'var(--space-3)' }}
-                    >
-                        + Aggiungi Esercizio
-                    </button>
-
-                    <button
-                        className="btn btn-primary btn-full"
-                        onClick={handleSave}
-                        disabled={!routineName.trim() || selectedExercises.length === 0}
-                        style={{ opacity: (!routineName.trim() || selectedExercises.length === 0) ? 0.4 : 1 }}
-                    >
-                        Salva Routine
-                    </button>
-                </div>
+                <RoutineBuilderForm
+                    title={editingRoutineId ? 'Modifica Routine' : 'Nuova Routine'}
+                    routineName={routineName}
+                    onRoutineNameChange={setRoutineName}
+                    routineColor={routineColor}
+                    onRoutineColorChange={setRoutineColor}
+                    selectedExercises={selectedExercises}
+                    onSetCountChange={handleSetCount}
+                    onRemoveExercise={handleRemoveExercise}
+                    onOpenExercisePicker={() => setShowExercisePicker(true)}
+                    onSave={handleSave}
+                    saveDisabled={!routineName.trim() || selectedExercises.length === 0}
+                />
             )}
 
             {/* Exercise picker modal */}
@@ -185,31 +113,13 @@ export default function Routines({ routines, onCreateRoutine, onDeleteRoutine, o
             )}
 
             {/* Completed Videos Carousel */}
-            {completedVideos.length > 0 && !showCreate && (
-                <div className="video-section" style={{ marginTop: 0, marginBottom: 'var(--space-5)' }}>
-                    <div className="section-label" style={{ marginBottom: 'var(--space-2)' }}>Video Completati</div>
-                    <div className="video-carousel">
-                        {completedVideos.map(v => {
-                            const thumb = `https://img.youtube.com/vi/${v.yt}/mqdefault.jpg`
-                            return (
-                                <div key={v.yt} className="video-card" onClick={() => setSelectedVideo(v)}>
-                                    <div className="video-card-thumb">
-                                        <img src={thumb} alt="" loading="lazy" />
-                                        {v.dur && <div className="video-card-duration">{v.dur}</div>}
-                                        <div className="video-card-completed">✓</div>
-                                    </div>
-                                    <div className="video-card-body">
-                                        <div className="video-card-title" style={{ WebkitLineClamp: 1 }}>{v.title}</div>
-                                        <div className="video-card-meta">
-                                            {v.kcal > 0 && <span className="video-badge">🔥 {v.kcal}</span>}
-                                            {v.cat && <span className="video-badge cat">{v.cat}</span>}
-                                        </div>
-                                    </div>
-                                </div>
-                            )
-                        })}
-                    </div>
-                </div>
+            {!showCreate && (
+                <CompletedVideosCarousel
+                    title="Video Completati"
+                    videos={completedVideos}
+                    onSelect={setSelectedVideo}
+                    style={{ marginTop: 0, marginBottom: 'var(--space-5)' }}
+                />
             )}
 
             {/* Routines list */}
@@ -228,16 +138,13 @@ export default function Routines({ routines, onCreateRoutine, onDeleteRoutine, o
                     {routines.length > 0 && <div className="section-label">Le tue routine ({routines.length})</div>}
                     {routines.map(routine => {
                         const isExpanded = expandedId === routine.id
-                        const totalSets = routine.exercises.reduce((s, e) => s + e.setsCount, 0)
                         return (
-                            <div key={routine.id} className="routine-card" style={{ borderLeft: `5px solid ${routine.color || 'var(--border)'}` }} onClick={() => setExpandedId(isExpanded ? null : routine.id)}>
-                                <div className="routine-card-header">
-                                    <div>
-                                        <div className="routine-card-title">{routine.name}</div>
-                                        <div className="routine-card-meta">
-                                            {routine.exercises.length} esercizi · {totalSets} serie
-                                        </div>
-                                    </div>
+                            <RoutineCard
+                                key={routine.id}
+                                routine={routine}
+                                expanded={isExpanded}
+                                onToggle={() => setExpandedId(isExpanded ? null : routine.id)}
+                                action={(
                                     <button
                                         className="btn btn-primary btn-sm"
                                         onClick={(e) => { e.stopPropagation(); onStartFromRoutine(routine) }}
@@ -245,36 +152,19 @@ export default function Routines({ routines, onCreateRoutine, onDeleteRoutine, o
                                     >
                                         Inizia
                                     </button>
-                                </div>
-
-                                {/* Exercise preview tags */}
-                                <div className="routine-card-tags">
-                                    {routine.exercises.map((ex, i) => (
-                                        <span key={i} className="history-tag">{ex.name}</span>
-                                    ))}
-                                </div>
-
-                                {isExpanded && (
-                                    <div className="history-expanded">
-                                        {routine.exercises.map((ex, i) => (
-                                            <div key={i} className="routine-detail-item">
-                                                <span className="routine-detail-name">{ex.name}</span>
-                                                <span className="routine-detail-sets">{ex.setsCount} serie</span>
-                                            </div>
-                                        ))}
-                                        <div className="history-actions">
+                                )}
+                            >
+                                <RoutineDetails
+                                    routine={routine}
+                                    showRest={false}
+                                    actions={(
+                                        <>
                                             <button
                                                 className="btn btn-secondary btn-sm"
                                                 style={{ flex: 1 }}
                                                 onClick={(e) => {
                                                     e.stopPropagation()
-                                                    setEditingRoutineId(routine.id)
-                                                    setRoutineName(routine.name)
-                                                    setRoutineColor(routine.color || '#8b5cf6')
-                                                    // Add setsCount directly as it is mapped
-                                                    setSelectedExercises([...routine.exercises])
-                                                    setShowCreate(true)
-                                                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                                                    startEditingRoutine(routine)
                                                 }}
                                             >
                                                 Modifica
@@ -286,10 +176,10 @@ export default function Routines({ routines, onCreateRoutine, onDeleteRoutine, o
                                             >
                                                 Elimina
                                             </button>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
+                                        </>
+                                    )}
+                                />
+                            </RoutineCard>
                         )
                     })}
                 </>

@@ -1,38 +1,14 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import VideoPlayer from '../components/VideoPlayer'
+import { addCompletedVideo, loadCompletedVideos } from '../utils/videos'
 
 const BASE = './fixfit/'
-
-function getCompletedVideos() {
-    try {
-        const raw = localStorage.getItem('gymtrack_completed_videos')
-        if (!raw) return []
-        const parsed = JSON.parse(raw)
-        // Convert old string format to object format if necessary
-        return parsed.map(item => typeof item === 'string' ? { yt: item } : item)
-    } catch { return [] }
-}
-
-function markCompleted(video) {
-    const completed = getCompletedVideos()
-    if (!completed.some(v => v.yt === video.yt)) {
-        completed.push({
-            yt: video.yt,
-            title: video.title,
-            dur: video.dur,
-            kcal: video.kcal,
-            cat: video.cat
-        })
-        localStorage.setItem('gymtrack_completed_videos', JSON.stringify(completed))
-    }
-    return [...completed]
-}
 
 export default function VideoLibrary({ onLogVideo, hasActiveWorkout, onResumeWorkout }) {
     const [latestVideos, setLatestVideos] = useState([])
     const [categories, setCategories] = useState([])
     const [categoryVideos, setCategoryVideos] = useState({})
-    const [completedVideos, setCompletedVideos] = useState(getCompletedVideos)
+    const [completedVideos, setCompletedVideos] = useState(loadCompletedVideos)
     const [selectedVideo, setSelectedVideo] = useState(null)
     const [searchQuery, setSearchQuery] = useState('')
     const loadedCats = useRef(new Set())
@@ -69,7 +45,7 @@ export default function VideoLibrary({ onLogVideo, hasActiveWorkout, onResumeWor
     }, [])
 
     const handleComplete = useCallback((video) => {
-        setCompletedVideos(markCompleted(video))
+        setCompletedVideos(addCompletedVideo(video))
         if (onLogVideo) onLogVideo(video)
     }, [onLogVideo])
 

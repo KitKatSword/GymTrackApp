@@ -10,6 +10,7 @@ import HistoryCalendar from './pages/HistoryCalendar'
 import WorkoutTab from './pages/WorkoutTab'
 import VideoLibrary from './pages/VideoLibrary'
 import { exportAllData, importAllData } from './data/exercises'
+import { syncRoutineRestTargetsFromWorkout } from './utils/workouts'
 
 // Clean SVG icons for nav
 const NavIcons = {
@@ -171,21 +172,8 @@ export default function App() {
     }, [activeWorkout, todayWorkout])
 
     const handleFinishWorkout = useCallback((id) => {
-        // Sync rest times back to the source routine
         const finishedWorkout = workouts.find(w => w.id === id)
-        if (finishedWorkout && finishedWorkout.routineName) {
-            const matchingRoutine = routineActions.routines.find(r => r.name === finishedWorkout.routineName)
-            if (matchingRoutine) {
-                const updatedExercises = matchingRoutine.exercises.map(routineEx => {
-                    const workoutEx = finishedWorkout.exercises.find(we => we.name === routineEx.name)
-                    if (workoutEx && workoutEx.targetRest) {
-                        return { ...routineEx, targetRest: workoutEx.targetRest }
-                    }
-                    return routineEx
-                })
-                routineActions.updateRoutine(matchingRoutine.id, { exercises: updatedExercises })
-            }
-        }
+        syncRoutineRestTargetsFromWorkout(finishedWorkout, routineActions.routines, routineActions.updateRoutine)
         finishWorkout(id)
         setActiveWorkoutId(null)
         localStorage.removeItem('gymtrack_active_workout')
@@ -218,19 +206,7 @@ export default function App() {
 
     const handleFinishPastWorkout = useCallback((id, startTime, endTime) => {
         const finishedWorkout = workouts.find(w => w.id === id)
-        if (finishedWorkout && finishedWorkout.routineName) {
-            const matchingRoutine = routineActions.routines.find(r => r.name === finishedWorkout.routineName)
-            if (matchingRoutine) {
-                const updatedExercises = matchingRoutine.exercises.map(routineEx => {
-                    const workoutEx = finishedWorkout.exercises.find(we => we.name === routineEx.name)
-                    if (workoutEx && workoutEx.targetRest) {
-                        return { ...routineEx, targetRest: workoutEx.targetRest }
-                    }
-                    return routineEx
-                })
-                routineActions.updateRoutine(matchingRoutine.id, { exercises: updatedExercises })
-            }
-        }
+        syncRoutineRestTargetsFromWorkout(finishedWorkout, routineActions.routines, routineActions.updateRoutine)
         finishWorkout(id, startTime, endTime, true)
         setActiveWorkoutId(null)
         localStorage.removeItem('gymtrack_active_workout')

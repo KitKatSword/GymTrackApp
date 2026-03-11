@@ -1,10 +1,12 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import ActivityHeatmap from '../components/ActivityHeatmap'
+import RoutineCard from '../components/RoutineCard'
+import RoutineDetails from '../components/RoutineDetails'
+import { getWorkoutCompletedSetCount } from '../utils/workouts'
 
 export default function Home({ stats, workouts, activeWorkout, onStartWorkout, onResumeWorkout, onExport, onImport, theme, onToggleTheme, routines = [], onStartFromRoutine }) {
     const [showBackupModal, setShowBackupModal] = useState(false)
     const [expandedRoutineId, setExpandedRoutineId] = useState(null)
-    const longPressTimer = useRef(null)
     const today = new Date()
     const dayNames = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato']
     const monthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
@@ -73,7 +75,7 @@ export default function Home({ stats, workouts, activeWorkout, onStartWorkout, o
                         <div className="pulse-dot" />
                     </div>
                     <div className="active-workout-card-meta">
-                        {activeWorkout.exercises.length} esercizi · {activeWorkout.exercises.reduce((s, e) => s + e.sets.filter(st => st.completed).length, 0)} serie completate
+                        {activeWorkout.exercises.length} esercizi · {getWorkoutCompletedSetCount(activeWorkout)} serie completate
                     </div>
                     <button className="btn btn-primary btn-full" onClick={onResumeWorkout}>
                         Continua →
@@ -125,21 +127,14 @@ export default function Home({ stats, workouts, activeWorkout, onStartWorkout, o
                             <div className="section-label" style={{ marginBottom: 'var(--space-3)' }}>Fatte di recente</div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
                                 {recentRoutines.map(routine => {
-                                    const isExpanded = expandedRoutineId === routine.id;
+                                    const isExpanded = expandedRoutineId === routine.id
                                     return (
-                                        <div
+                                        <RoutineCard
                                             key={routine.id}
-                                            className="routine-card"
-                                            style={{ borderLeft: `5px solid ${routine.color || 'var(--border)'}`, cursor: 'pointer' }}
-                                            onClick={() => setExpandedRoutineId(isExpanded ? null : routine.id)}
-                                        >
-                                            <div className="routine-card-header">
-                                                <div>
-                                                    <div className="routine-card-title">{routine.name}</div>
-                                                    <div className="routine-card-meta">
-                                                        {routine.exercises.length} esercizi · {routine.exercises.reduce((s, e) => s + e.setsCount, 0)} serie
-                                                    </div>
-                                                </div>
+                                            routine={routine}
+                                            expanded={isExpanded}
+                                            onToggle={() => setExpandedRoutineId(isExpanded ? null : routine.id)}
+                                            action={(
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation()
@@ -155,33 +150,10 @@ export default function Home({ stats, workouts, activeWorkout, onStartWorkout, o
                                                         <polygon points="5 3 19 12 5 21 5 3" />
                                                     </svg>
                                                 </button>
-                                            </div>
-
-                                            {/* Exercise preview tags */}
-                                            <div className="routine-card-tags">
-                                                {routine.exercises.map((ex, i) => (
-                                                    <span key={i} className="history-tag">{ex.name}</span>
-                                                ))}
-                                            </div>
-
-                                            {isExpanded && (
-                                                <div className="history-expanded">
-                                                    {routine.exercises.map((ex, i) => (
-                                                        <div key={i} className="routine-detail-item">
-                                                            <span className="routine-detail-name">{ex.name}</span>
-                                                            <span className="routine-detail-sets">
-                                                                {ex.setsCount} serie
-                                                                {ex.targetRest && ex.targetRest !== 90 && (
-                                                                    <span style={{ marginLeft: 6, opacity: 0.7 }}>
-                                                                        · ⏱ {Math.floor(ex.targetRest / 60)}:{(ex.targetRest % 60).toString().padStart(2, '0')}
-                                                                    </span>
-                                                                )}
-                                                            </span>
-                                                        </div>
-                                                    ))}
-                                                </div>
                                             )}
-                                        </div>
+                                        >
+                                            <RoutineDetails routine={routine} />
+                                        </RoutineCard>
                                     )
                                 })}
                             </div>

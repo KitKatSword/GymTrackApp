@@ -3,10 +3,7 @@ import ExerciseCard from "../components/ExerciseCard";
 import EmomCard from "../components/EmomCard";
 import VideoExerciseCard from "../components/VideoExerciseCard";
 import ExerciseSearch from "../components/ExerciseSearch";
-
-function getExerciseSets(exercise) {
-  return Array.isArray(exercise?.sets) ? exercise.sets : [];
-}
+import { getExerciseSets } from "../utils/workouts";
 
 function getWorkoutStartMs(workout) {
   if (workout?.startTimestamp) return workout.startTimestamp;

@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { PARAM_TYPES } from "../data/exercises";
 import TimePickerModal from "./TimePickerModal";
 
 function getParamLabel(p) {

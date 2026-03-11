@@ -2,6 +2,7 @@ import { useState } from "react";
 import ExerciseCard from "../components/ExerciseCard";
 import EmomCard from "../components/EmomCard";
 import ExerciseSearch from "../components/ExerciseSearch";
+import { getWorkoutCompletedSetCount } from "../utils/workouts";
 
 const MONTHS_SHORT = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
 
@@ -29,12 +30,6 @@ const SaveIcon = () => (
         <polyline points="7 3 7 8 15 8" />
     </svg>
 );
-
-function abbr(name) {
-    const words = name.trim().split(/\s+/);
-    if (words.length === 1) return words[0].substring(0, 2).toUpperCase();
-    return (words[0][0] + words[1][0]).toUpperCase();
-}
 
 export default function LogPastWorkout({
     workout,
@@ -74,9 +69,7 @@ export default function LogPastWorkout({
         );
     }
 
-    const totalCompleted = workout.exercises.reduce(
-        (s, ex) => s + ex.sets.filter((st) => st.completed).length, 0
-    );
+    const totalCompleted = getWorkoutCompletedSetCount(workout);
 
     const handleStartRest = () => { };
 

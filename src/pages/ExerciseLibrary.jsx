@@ -1,14 +1,9 @@
 import { useState, useMemo, useRef } from 'react'
-import { getAllExercises, getCustomExercises, saveCustomExercise, deleteCustomExercise, PARAM_TYPES, categories, resizeImageToBase64 } from '../data/exercises'
+import { getCustomExercises, saveCustomExercise, deleteCustomExercise, PARAM_TYPES, categories, resizeImageToBase64 } from '../data/exercises'
+import { getInitials } from '../utils/text'
 
 function generateId() {
     return 'custom-' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5)
-}
-
-function abbr(name) {
-    const words = name.trim().split(/\s+/)
-    if (words.length === 1) return words[0].substring(0, 2).toUpperCase()
-    return (words[0][0] + words[1][0]).toUpperCase()
 }
 
 const CATEGORY_OPTIONS = categories.filter(c => c !== 'Tutti' && c !== 'Custom')
@@ -193,7 +188,7 @@ export default function ExerciseLibrary() {
                             {ex.image ? (
                                 <img src={ex.image} alt="" className="library-item-img" />
                             ) : (
-                                <div className="library-item-icon">{abbr(ex.name)}</div>
+                                <div className="library-item-icon">{getInitials(ex.name)}</div>
                             )}
                             <div style={{ flex: 1, minWidth: 0 }}>
                                 <div style={{ fontWeight: 600, fontSize: 'var(--text-md)' }}>{ex.name}</div>

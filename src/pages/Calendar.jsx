@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { toLocalDateString } from '../utils/date'
+import { getWorkoutCompletedSetCount } from '../utils/workouts'
 
 const DAY_NAMES = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
 const MONTH_NAMES = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre']
@@ -19,7 +20,7 @@ export default function Calendar({ workouts }) {
             }
             dates[w.date].count++
             dates[w.date].exercises += w.exercises.length
-            dates[w.date].sets += w.exercises.reduce((s, e) => s + e.sets.filter(st => st.completed).length, 0)
+            dates[w.date].sets += getWorkoutCompletedSetCount(w)
         })
         return dates
     }, [workouts])
@@ -193,7 +194,7 @@ export default function Calendar({ workouts }) {
                                         🕐 {w.startTime} - {w.endTime}
                                     </span>
                                     <span style={{ fontSize: 'var(--font-xs)', color: 'var(--accent-light)' }}>
-                                        {w.exercises.reduce((s, e) => s + e.sets.filter(st => st.completed).length, 0)} serie
+                                        {getWorkoutCompletedSetCount(w)} serie
                                     </span>
                                 </div>
                                 <div style={{ display: 'flex', gap: 'var(--space-xs)', flexWrap: 'wrap' }}>

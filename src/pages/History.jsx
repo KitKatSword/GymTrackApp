@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { getExerciseSets, getWorkoutCompletedSetCount, getWorkoutDuration } from '../utils/workouts'
 
 export default function History({ workouts, onDuplicate, onDelete }) {
     const [expandedId, setExpandedId] = useState(null)
@@ -11,15 +12,6 @@ export default function History({ workouts, onDuplicate, onDelete }) {
         const days = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab']
         const months = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic']
         return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`
-    }
-
-    const getDuration = (start, end) => {
-        if (!start || !end) return '--'
-        const [sh, sm] = start.split(':').map(Number)
-        const [eh, em] = end.split(':').map(Number)
-        const mins = (eh * 60 + em) - (sh * 60 + sm)
-        if (mins < 60) return `${mins} min`
-        return `${Math.floor(mins / 60)}h ${mins % 60}min`
     }
 
     if (completedWorkouts.length === 0) {
@@ -47,7 +39,7 @@ export default function History({ workouts, onDuplicate, onDelete }) {
             </div>
 
             {completedWorkouts.map(w => {
-                const totalSets = w.exercises.reduce((s, e) => s + e.sets.filter(st => st.completed).length, 0)
+                const totalSets = getWorkoutCompletedSetCount(w)
                 const isExpanded = expandedId === w.id
 
                 return (
@@ -61,7 +53,7 @@ export default function History({ workouts, onDuplicate, onDelete }) {
                                 )}
                                 <div className="history-meta" style={{ marginTop: w.routineName ? 0 : 4 }}>
                                     <span>🕐 {w.startTime} - {w.endTime}</span>
-                                    <span>⏱ {getDuration(w.startTime, w.endTime)}</span>
+                                    <span>⏱ {getWorkoutDuration(w.startTime, w.endTime)}</span>
                                 </div>
                             </div>
                             <div style={{
@@ -88,7 +80,7 @@ export default function History({ workouts, onDuplicate, onDelete }) {
                                         <div style={{ fontWeight: 600, fontSize: 'var(--font-sm)', marginBottom: 4 }}>
                                             {ex.emoji} {ex.name}
                                         </div>
-                                        {ex.sets.filter(s => s.completed).map((s, i) => {
+                                        {getExerciseSets(ex).filter(s => s.completed).map((s, i) => {
                                             const params = ex.params || ['weight', 'reps']
                                             const parts = params.map(p => {
                                                 if (p === 'weight') return `${s.weight || 0}kg`

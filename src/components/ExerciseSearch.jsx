@@ -1,14 +1,9 @@
 import { useState, useMemo } from 'react'
 import { getAllExercises, getCustomExercises, saveCustomExercise, updateCustomExercise, deleteCustomExercise, categories, PARAM_TYPES } from '../data/exercises'
+import { getInitials } from '../utils/text'
 
 function generateId() {
     return 'custom-' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5)
-}
-
-function abbr(str) {
-    const words = str.trim().split(/\s+/)
-    if (words.length === 1) return words[0].substring(0, 2).toUpperCase()
-    return (words[0][0] + words[1][0]).toUpperCase()
 }
 
 export default function ExerciseSearch({ onSelect, onClose }) {
@@ -184,7 +179,7 @@ export default function ExerciseSearch({ onSelect, onClose }) {
                             {ex.image ? (
                                 <img src={ex.image} alt="" className="exercise-list-img" />
                             ) : (
-                                <div className="exercise-list-icon">{abbr(ex.name)}</div>
+                                <div className="exercise-list-icon">{getInitials(ex.name)}</div>
                             )}
                             <div className="info">
                                 <div className="name">

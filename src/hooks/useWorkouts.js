@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { getStartOfWeekDateString, toLocalDateString } from '../utils/date'
+import { getWorkoutCompletedSetCount } from '../utils/workouts'
 
 const STORAGE_KEY = 'gymtrack_workouts'
 
@@ -422,11 +423,7 @@ export default function useWorkouts() {
         const weekStr = getStartOfWeekDateString()
 
         const thisWeek = workouts.filter(w => w.date >= weekStr)
-        const totalSets = workouts.reduce((sum, w) =>
-            sum + w.exercises.reduce((eSum, e) =>
-                eSum + e.sets.filter(s => s.completed).length, 0
-            ), 0
-        )
+        const totalSets = workouts.reduce((sum, workout) => sum + getWorkoutCompletedSetCount(workout), 0)
 
         // Streak calculation
         let streak = 0
