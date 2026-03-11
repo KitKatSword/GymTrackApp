@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { toLocalDateString } from '../utils/date'
 
 const DAY_NAMES = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
 const MONTH_NAMES = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre']
@@ -46,7 +47,7 @@ export default function Calendar({ workouts }) {
     const prevMonth = () => setViewDate(new Date(year, month - 1, 1))
     const nextMonth = () => setViewDate(new Date(year, month + 1, 1))
 
-    const today = new Date().toISOString().split('T')[0]
+    const today = toLocalDateString()
 
     // Count total and this month stats
     const monthWorkouts = useMemo(() => {

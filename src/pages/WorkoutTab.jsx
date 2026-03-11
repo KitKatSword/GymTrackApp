@@ -2,10 +2,7 @@ import { useState, useEffect } from 'react'
 import { getAllExercises, PARAM_TYPES } from '../data/exercises'
 import ExerciseSearch from '../components/ExerciseSearch'
 import VideoPlayer from '../components/VideoPlayer'
-
-const ROUTINE_COLORS = [
-    '#ef4444', '#f97316', '#eab308', '#10b981', '#0ea5e9', '#8b5cf6', '#ec4899',
-]
+import { ROUTINE_COLORS } from '../constants/colors'
 
 function abbr(name) {
     const words = name.trim().split(/\s+/)
@@ -90,9 +87,9 @@ export default function WorkoutTab({
             {/* Quick Start Empty Workout */}
             {!showCreate && hasActiveWorkout && (
                 <button
-                    className="btn btn-full"
+                    className="btn btn-primary btn-full resume-workout-btn"
                     onClick={onResumeWorkout}
-                    style={{ marginBottom: 'var(--space-6)', backgroundColor: 'var(--success)', borderColor: 'var(--success)', color: 'white' }}
+                    style={{ marginBottom: 'var(--space-6)' }}
                 >
                     Riprendi Allenamento in Corso
                 </button>
@@ -233,7 +230,6 @@ export default function WorkoutTab({
                                         </div>
                                     </div>
                                     <button
-                                        className="btn"
                                         onClick={(e) => {
                                             e.stopPropagation()
                                             if (hasActiveWorkout) {
@@ -242,23 +238,9 @@ export default function WorkoutTab({
                                                 onStartFromRoutine(routine)
                                             }
                                         }}
-                                        onPointerDown={e => { e.currentTarget.style.transform = 'scale(0.88)'; e.currentTarget.style.backgroundColor = 'var(--bg-card-hover)' }}
-                                        onPointerUp={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.backgroundColor = 'var(--bg-input)' }}
-                                        onPointerEnter={e => e.currentTarget.style.backgroundColor = 'var(--bg-card-hover)'}
-                                        onPointerLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.backgroundColor = 'var(--bg-input)' }}
-                                        style={{
-                                            width: 44, height: 28, padding: 0, borderRadius: 99,
-                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            backgroundColor: 'var(--bg-input)',
-                                            border: 'none',
-                                            color: 'var(--text-secondary)',
-                                            opacity: hasActiveWorkout ? 0.4 : 1,
-                                            cursor: hasActiveWorkout ? 'not-allowed' : 'pointer',
-                                            transition: 'transform 0.15s ease, background-color 0.15s ease',
-                                            flexShrink: 0,
-                                        }}
+                                        className={hasActiveWorkout ? "play-btn-round disabled" : "play-btn-round"}
                                     >
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{ marginLeft: 2 }}>
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{ marginLeft: 3 }}>
                                             <polygon points="5 3 19 12 5 21 5 3" />
                                         </svg>
                                     </button>
@@ -362,7 +344,6 @@ export default function WorkoutTab({
                                                 </div>
                                             </div>
                                             <button
-                                                className="btn"
                                                 onClick={(e) => {
                                                     e.stopPropagation()
                                                     if (hasActiveWorkout) {
@@ -372,23 +353,9 @@ export default function WorkoutTab({
                                                         onStartFromRoutine(routine)
                                                     }
                                                 }}
-                                                onPointerDown={e => { e.currentTarget.style.transform = 'scale(0.88)'; e.currentTarget.style.backgroundColor = 'var(--bg-card-hover)' }}
-                                                onPointerUp={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.backgroundColor = 'var(--bg-input)' }}
-                                                onPointerEnter={e => e.currentTarget.style.backgroundColor = 'var(--bg-card-hover)'}
-                                                onPointerLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.backgroundColor = 'var(--bg-input)' }}
-                                                style={{
-                                                    width: 44, height: 28, padding: 0, borderRadius: 99,
-                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                    backgroundColor: 'var(--bg-input)',
-                                                    border: 'none',
-                                                    color: 'var(--text-secondary)',
-                                                    opacity: hasActiveWorkout ? 0.4 : 1,
-                                                    cursor: hasActiveWorkout ? 'not-allowed' : 'pointer',
-                                                    transition: 'transform 0.15s ease, background-color 0.15s ease',
-                                                    flexShrink: 0,
-                                                }}
+                                                className={hasActiveWorkout ? "play-btn-round disabled" : "play-btn-round"}
                                             >
-                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{ marginLeft: 2 }}>
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{ marginLeft: 3 }}>
                                                     <polygon points="5 3 19 12 5 21 5 3" />
                                                 </svg>
                                             </button>

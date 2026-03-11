@@ -1,4 +1,6 @@
 import { useState, useMemo, useRef } from 'react'
+import { toLocalDateString } from '../utils/date'
+import { HISTORY_CALENDAR_COLORS } from '../constants/colors'
 
 const DAY_SHORT = ['L', 'M', 'M', 'G', 'V', 'S', 'D']
 const MONTHS = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
@@ -90,7 +92,7 @@ function ParamParts({ ex }) {
 }
 
 export default function HistoryCalendar({ workouts, onDuplicate, onDelete, onUpdateWorkoutColor, onStartWorkoutOnDate, hasActiveWorkout }) {
-    const today = new Date().toISOString().split('T')[0]
+    const today = toLocalDateString()
     const [viewDate, setViewDate] = useState(new Date())
     const [selectedDate, setSelectedDate] = useState(today)
     const [expandedId, setExpandedId] = useState(null)
@@ -275,7 +277,7 @@ export default function HistoryCalendar({ workouts, onDuplicate, onDelete, onUpd
                         <div style={{ fontWeight: 700, fontSize: 'var(--text-lg)', marginBottom: 16 }}>Cambia Colore Giorno</div>
                         <div style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-sm)', marginBottom: 24 }}>Scegli il colore per differenziare i tuoi allenamenti sul calendario.</div>
                         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 'var(--space-4)' }}>
-                            {['#ef4444', '#f97316', '#eab308', '#10b981', '#0ea5e9', '#8b5cf6', '#ec4899', '#6e6e90'].map(c => (
+                            {HISTORY_CALENDAR_COLORS.map(c => (
                                 <button
                                     key={c}
                                     onClick={() => {

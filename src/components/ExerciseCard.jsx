@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PARAM_TYPES } from "../data/exercises";
 import TimePickerModal from "./TimePickerModal";
 
@@ -34,6 +34,7 @@ export default function ExerciseCard({
     onToggleSet,
     onRemoveExercise,
     onStartRest,
+    onCancelRest,
     onUpdateNotes,
     onUpdateExerciseRest,
     activeRestSetId,
@@ -42,13 +43,18 @@ export default function ExerciseCard({
     const targetRest = exercise.targetRest || 90;
     const [showTimePicker, setShowTimePicker] = useState(false);
     const [localNotes, setLocalNotes] = useState(exercise.notes || '');
+    const sets = Array.isArray(exercise.sets) ? exercise.sets : [];
 
     const params = exercise.params || ["weight", "reps"];
     const gridTemplate = isPastLog
         ? `28px ${params.map(() => "1fr").join(" ")}`
         : `28px ${params.map(() => "1fr").join(" ")} 36px`;
 
-    const isResting = exercise.sets.some(s => s.id === activeRestSetId);
+    const isResting = sets.some(s => s.id === activeRestSetId);
+
+    useEffect(() => {
+        setLocalNotes(exercise.notes || '');
+    }, [exercise.id, exercise.notes]);
 
     const handleNotesBlur = () => {
         if (onUpdateNotes) onUpdateNotes(workoutId, exercise.id, localNotes);
@@ -119,7 +125,7 @@ export default function ExerciseCard({
                 {!isPastLog && <div className="set-label">✓</div>}
             </div>
 
-            {exercise.sets.map((set, idx) => {
+            {sets.map((set, idx) => {
                 const isRestingThis = activeRestSetId === set.id;
                 return (
                     <div
@@ -156,6 +162,9 @@ export default function ExerciseCard({
                             <button
                                 className={`check-btn ${set.completed ? "checked" : ""}`}
                                 onClick={() => {
+                                    if (set.completed && onCancelRest) {
+                                        onCancelRest(set.id);
+                                    }
                                     onToggleSet(workoutId, exercise.id, set.id);
                                     if (!set.completed) {
                                         onStartRest(exercise.name, idx + 1, set.id, targetRest);

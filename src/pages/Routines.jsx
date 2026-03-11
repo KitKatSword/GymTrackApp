@@ -2,16 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { getAllExercises, PARAM_TYPES } from '../data/exercises'
 import ExerciseSearch from '../components/ExerciseSearch'
 import VideoPlayer from '../components/VideoPlayer'
-
-const ROUTINE_COLORS = [
-    '#ef4444', // Red
-    '#f97316', // Orange
-    '#eab308', // Yellow
-    '#10b981', // Green
-    '#0ea5e9', // Blue
-    '#8b5cf6', // Purple
-    '#ec4899', // Pink
-]
+import { ROUTINE_COLORS } from '../constants/colors'
 
 function abbr(name) {
     const words = name.trim().split(/\s+/)

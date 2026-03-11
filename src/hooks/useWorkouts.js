@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { getStartOfWeekDateString, toLocalDateString } from '../utils/date'
 
 const STORAGE_KEY = 'gymtrack_workouts'
 
@@ -30,7 +31,7 @@ export default function useWorkouts() {
         const now = new Date()
         const workout = {
             id: generateId(),
-            date: now.toISOString().split('T')[0],
+            date: toLocalDateString(now),
             startTime: now.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
             startTimestamp: now.getTime(),
             endTime: null,
@@ -80,7 +81,7 @@ export default function useWorkouts() {
         })
         const workout = {
             id: generateId(),
-            date: now.toISOString().split('T')[0],
+            date: toLocalDateString(now),
             startTime: now.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
             startTimestamp: now.getTime(),
             endTime: null,
@@ -98,7 +99,7 @@ export default function useWorkouts() {
         const timeStr = now.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
         const workout = {
             id: generateId(),
-            date: now.toISOString().split('T')[0],
+            date: toLocalDateString(now),
             startTime: timeStr,
             startTimestamp: now.getTime(),
             endTime: timeStr,
@@ -283,12 +284,13 @@ export default function useWorkouts() {
         const newWorkout = {
             ...original,
             id: generateId(),
-            date: now.toISOString().split('T')[0],
+            date: toLocalDateString(now),
             startTime: now.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
             startTimestamp: now.getTime(),
             endTime: null,
             exercises: original.exercises.map(e => ({
                 ...e,
+                emomCompleted: e.isEmom ? false : e.emomCompleted,
                 id: generateId(),
                 sets: e.sets.map(s => ({ ...s, id: generateId(), completed: false })),
             })),
@@ -411,15 +413,13 @@ export default function useWorkouts() {
     }, [])
 
     const getTodayWorkout = useCallback(() => {
-        const today = new Date().toISOString().split('T')[0]
+        const today = toLocalDateString()
         return workouts.find(w => w.date === today && !w.endTime)
     }, [workouts])
 
     const getStats = useCallback(() => {
-        const today = new Date().toISOString().split('T')[0]
-        const thisWeekStart = new Date()
-        thisWeekStart.setDate(thisWeekStart.getDate() - thisWeekStart.getDay() + 1)
-        const weekStr = thisWeekStart.toISOString().split('T')[0]
+        const today = toLocalDateString()
+        const weekStr = getStartOfWeekDateString()
 
         const thisWeek = workouts.filter(w => w.date >= weekStr)
         const totalSets = workouts.reduce((sum, w) =>
@@ -433,8 +433,9 @@ export default function useWorkouts() {
         const dates = [...new Set(workouts.filter(w => w.endTime).map(w => w.date))].sort().reverse()
         if (dates.length > 0) {
             const checkDate = new Date()
+            checkDate.setHours(0, 0, 0, 0)
             for (let i = 0; i < 365; i++) {
-                const dateStr = checkDate.toISOString().split('T')[0]
+                const dateStr = toLocalDateString(checkDate)
                 if (dates.includes(dateStr)) {
                     streak++
                     checkDate.setDate(checkDate.getDate() - 1)

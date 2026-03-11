@@ -77,6 +77,13 @@ export default function EmomCard({
     const audioCtx = useRef(null);
     const prevPosRef = useRef(null);
 
+    useEffect(() => {
+        setLocalNotes(exercise.notes || "");
+        setBlocks(exercise.emomBlocks || [{ minutes: 10, reps: 5 }]);
+        setWeight(exercise.emomWeight || "");
+        setIsFinished(exercise.emomCompleted || false);
+    }, [exercise.id, exercise.notes, exercise.emomBlocks, exercise.emomWeight, exercise.emomCompleted]);
+
     const totalMinutes = blocks.reduce((s, b) => s + b.minutes, 0);
     const totalSeconds = totalMinutes * 60 + 10; // add 10 seconds prep
     const totalReps = blocks.reduce((s, b) => s + b.minutes * b.reps, 0);

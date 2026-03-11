@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import VideoPlayer from './VideoPlayer'
 
 export default function VideoExerciseCard({
@@ -10,6 +10,10 @@ export default function VideoExerciseCard({
 }) {
     const [showPlayer, setShowPlayer] = useState(false)
     const [localNotes, setLocalNotes] = useState(exercise.notes || '')
+
+    useEffect(() => {
+        setLocalNotes(exercise.notes || '')
+    }, [exercise.id, exercise.notes])
 
     const isCompleted = exercise.sets?.[0]?.completed ?? false
     const thumb = exercise.videoYt

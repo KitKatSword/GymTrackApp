@@ -19,8 +19,23 @@
     --text-secondary: #a0a0c0;
     --text-muted: #6e6e90;
 
+    --success-rgb: 34, 197, 94;
     --success: #22c55e;
+    --success-strong: #16a34a;
+    --success-bright: #4ade80;
+    --success-soft: #86efac;
     --success-bg: rgba(34, 197, 94, 0.12);
+    --status-live: var(--success);
+    --status-live-bg: rgba(var(--success-rgb), 0.15);
+    --heat-1: rgba(var(--success-rgb), 0.25);
+    --heat-2: rgba(var(--success-rgb), 0.5);
+    --heat-3: rgba(var(--success-rgb), 0.75);
+    --heat-4: var(--success);
+    --heatmap-light-0: #e5e7eb;
+    --heatmap-light-1: #dcfce7;
+    --heatmap-light-2: #86efac;
+    --heatmap-light-3: #4ade80;
+    --heatmap-light-4: #22c55e;
     --danger: #f43f5e;
     --danger-bg: rgba(244, 63, 94, 0.12);
     --warning: #f59e0b;
@@ -112,8 +127,23 @@
     --text-secondary: #555570;
     --text-muted: #8888a0;
 
+    --success-rgb: 22, 163, 74;
     --success: #16a34a;
+    --success-strong: #15803d;
+    --success-bright: #4ade80;
+    --success-soft: #bbf7d0;
     --success-bg: rgba(22, 163, 74, 0.1);
+    --status-live: var(--success);
+    --status-live-bg: rgba(var(--success-rgb), 0.12);
+    --heat-1: rgba(var(--success-rgb), 0.18);
+    --heat-2: rgba(var(--success-rgb), 0.34);
+    --heat-3: rgba(var(--success-rgb), 0.56);
+    --heat-4: var(--success);
+    --heatmap-light-0: #e5e7eb;
+    --heatmap-light-1: #dcfce7;
+    --heatmap-light-2: #86efac;
+    --heatmap-light-3: #4ade80;
+    --heatmap-light-4: #22c55e;
     --danger: #dc2626;
     --danger-bg: rgba(220, 38, 38, 0.08);
     --warning: #d97706;
@@ -332,6 +362,10 @@ ol {
 
 .btn-primary:active {
     box-shadow: none;
+}
+
+.resume-workout-btn {
+    box-shadow: var(--shadow-accent);
 }
 
 .btn-secondary {
@@ -597,18 +631,18 @@ ol {
     0%,
     100% {
         box-shadow:
-            0 0 8px 2px rgba(34, 197, 94, 0.6),
-            0 0 20px 6px rgba(34, 197, 94, 0.35),
-            inset 0 0 12px 2px rgba(34, 197, 94, 0.15);
-        border-color: rgba(34, 197, 94, 0.9);
+            0 0 8px 2px rgba(var(--success-rgb), 0.6),
+            0 0 20px 6px rgba(var(--success-rgb), 0.35),
+            inset 0 0 12px 2px rgba(var(--success-rgb), 0.15);
+        border-color: rgba(var(--success-rgb), 0.9);
     }
 
     50% {
         box-shadow:
-            0 0 14px 4px rgba(34, 197, 94, 0.8),
-            0 0 35px 10px rgba(34, 197, 94, 0.5),
-            inset 0 0 18px 4px rgba(34, 197, 94, 0.25);
-        border-color: rgba(74, 222, 128, 1);
+            0 0 14px 4px rgba(var(--success-rgb), 0.8),
+            0 0 35px 10px rgba(var(--success-rgb), 0.5),
+            inset 0 0 18px 4px rgba(var(--success-rgb), 0.25);
+        border-color: var(--success-bright);
     }
 }
 
@@ -623,12 +657,12 @@ ol {
 }
 
 .timer-finished-glow {
-    border: 3px solid rgba(34, 197, 94, 0.9) !important;
+    border: 3px solid rgba(var(--success-rgb), 0.9) !important;
     border-bottom: none !important;
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
     background:
         linear-gradient(var(--bg-secondary), var(--bg-secondary)) padding-box,
-        linear-gradient(90deg, #22c55e, #4ade80, #86efac, #4ade80, #22c55e) border-box !important;
+        linear-gradient(90deg, var(--success), var(--success-bright), var(--success-soft), var(--success-bright), var(--success)) border-box !important;
     background-size: 200% 100%, 200% 100% !important;
     animation: glow-pulse 1.5s ease-in-out infinite, border-travel 2s linear infinite;
 }
@@ -858,8 +892,6 @@ ol {
 }
 
 .heatmap-cell {
-    width: 14px;
-    height: 14px;
     border-radius: 4px;
     background: var(--bg-input);
     transition: transform var(--transition-fast), background var(--transition-fast);
@@ -877,33 +909,37 @@ ol {
 
 /* Light mode support for the heatmap cells */
 [data-theme="light"] .heatmap-0 {
-    background: #e5e7eb;
+    background: var(--heatmap-light-0);
     border: 1px solid transparent;
     box-sizing: border-box;
 }
 
 [data-theme="light"] .heatmap-1 {
-    background: #dcfce7;
-    border: 1px solid rgba(34, 197, 94, 0.2);
+    background: var(--heatmap-light-1);
+    border: 1px solid rgba(var(--success-rgb), 0.2);
     box-sizing: border-box;
 }
 
 [data-theme="light"] .heatmap-2 {
-    background: #86efac;
-    border: 1px solid rgba(34, 197, 94, 0.3);
+    background: var(--heatmap-light-2);
+    border: 1px solid rgba(var(--success-rgb), 0.3);
     box-sizing: border-box;
 }
 
 [data-theme="light"] .heatmap-3 {
-    background: #4ade80;
-    border: 1px solid rgba(34, 197, 94, 0.4);
+    background: var(--heatmap-light-3);
+    border: 1px solid rgba(var(--success-rgb), 0.4);
     box-sizing: border-box;
 }
 
 [data-theme="light"] .heatmap-4 {
-    background: #22c55e;
-    border: 1px solid rgba(34, 197, 94, 0.5);
+    background: var(--heatmap-light-4);
+    border: 1px solid rgba(var(--success-rgb), 0.5);
     box-sizing: border-box;
+}
+
+[data-theme="light"] .heatmap-cell.future {
+    border: 1px solid transparent;
 }
 
 .heatmap-0 {
@@ -911,19 +947,19 @@ ol {
 }
 
 .heatmap-1 {
-    background: rgba(34, 197, 94, 0.25);
+    background: var(--heat-1);
 }
 
 .heatmap-2 {
-    background: rgba(34, 197, 94, 0.50);
+    background: var(--heat-2);
 }
 
 .heatmap-3 {
-    background: rgba(34, 197, 94, 0.75);
+    background: var(--heat-3);
 }
 
 .heatmap-4 {
-    background: var(--success);
+    background: var(--heat-4);
 }
 
 /* ===== Stat Grid ===== */
@@ -1607,8 +1643,8 @@ ol {
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background: var(--success);
-    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.15);
+    background: var(--status-live);
+    box-shadow: 0 0 0 4px var(--status-live-bg);
     animation: pulseScale 2s ease infinite;
 }
 
@@ -1743,8 +1779,8 @@ ol {
     font-size: var(--text-sm);
     font-weight: 600;
     letter-spacing: 0.03em;
-    background: var(--bg-input);
-    border: 1px solid var(--border);
+    background: transparent;
+    border: none;
     border-radius: var(--radius-md);
     color: var(--accent-light);
     cursor: pointer;
@@ -1752,7 +1788,41 @@ ol {
 }
 
 .create-exercise-toggle:active {
-    background: var(--bg-card-hover);
+    transform: scale(0.97);
+}
+
+/* ===== Play Button Round ===== */
+.play-btn-round {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background-color: var(--accent-dim);
+    color: var(--accent-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.15s ease, box-shadow 0.15s ease;
+    flex-shrink: 0;
+}
+
+.play-btn-round:hover {
+    background-color: var(--accent);
+    color: white;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+}
+
+.play-btn-round:active {
+    transform: scale(0.9);
+}
+
+.play-btn-round.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background-color: var(--bg-input);
+    color: var(--text-muted);
+    box-shadow: none;
 }
 
 /* ===== Workout Status Bar Improvements ===== */
@@ -2316,8 +2386,8 @@ ol {
 }
 
 .video-badge.cat {
-    background: var(--success-bg);
-    color: var(--success);
+    background: var(--bg-card-hover);
+    color: var(--text-secondary);
 }
 
 /* ===== Video Player Modal ===== */
@@ -2525,7 +2595,7 @@ ol {
 
 .video-exercise-card.video-done {
     border-color: var(--success);
-    box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.15);
+    box-shadow: 0 0 0 1px rgba(var(--success-rgb), 0.15);
 }
 
 .video-exercise-thumb {
@@ -2973,7 +3043,7 @@ ol {
     width: 56px;
     height: 56px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--success), #16a34a);
+    background: linear-gradient(135deg, var(--success), var(--success-strong));
     color: white;
     font-size: 28px;
     font-weight: 800;
@@ -2981,7 +3051,7 @@ ol {
     align-items: center;
     justify-content: center;
     margin-bottom: var(--space-3);
-    box-shadow: 0 4px 20px rgba(34, 197, 94, 0.4);
+    box-shadow: 0 4px 20px rgba(var(--success-rgb), 0.4);
     animation: pulseScale 1s ease infinite;
 }
 

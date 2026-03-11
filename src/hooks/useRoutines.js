@@ -19,6 +19,38 @@ function saveRoutines(routines) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(routines))
 }
 
+function normalizeEmomBlocks(blocks) {
+    if (!Array.isArray(blocks) || blocks.length === 0) {
+        return [{ minutes: 10, reps: 5 }]
+    }
+
+    return blocks.map(block => ({
+        minutes: Math.max(1, Number(block?.minutes) || 1),
+        reps: Math.max(1, Number(block?.reps) || 1),
+    }))
+}
+
+function mapExerciseToRoutine(ex) {
+    const params = ex.params || ['weight', 'reps']
+    const isEmom = ex.isEmom || params.includes('emom')
+    const setsCount = Math.max(1, ex.setsCount || (Array.isArray(ex.sets) ? ex.sets.length : 0) || 3)
+
+    return {
+        exerciseId: ex.exerciseId || ex.id,
+        name: ex.name,
+        category: ex.category,
+        emoji: ex.emoji || '',
+        params: isEmom ? ['emom'] : params,
+        isCustom: ex.isCustom || false,
+        image: ex.image || null,
+        isEmom,
+        emomBlocks: isEmom ? normalizeEmomBlocks(ex.emomBlocks) : undefined,
+        emomWeight: isEmom ? (ex.emomWeight || '') : undefined,
+        setsCount,
+        targetRest: ex.targetRest || 90,
+    }
+}
+
 export default function useRoutines() {
     const [routines, setRoutines] = useState(loadRoutines)
 
@@ -32,17 +64,7 @@ export default function useRoutines() {
             name,
             color: color || '#8b5cf6', // default color if none provided
             createdAt: Date.now(),
-            exercises: exercises.map(ex => ({
-                exerciseId: ex.id,
-                name: ex.name,
-                category: ex.category,
-                emoji: ex.emoji || '',
-                params: ex.params || ['weight', 'reps'],
-                isCustom: ex.isCustom || false,
-                image: ex.image || null,
-                setsCount: ex.setsCount || 3,
-                targetRest: ex.targetRest || 90,
-            })),
+            exercises: exercises.map(mapExerciseToRoutine),
         }
         setRoutines(prev => [routine, ...prev])
         return routine

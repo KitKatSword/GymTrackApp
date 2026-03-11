@@ -4,6 +4,53 @@ import EmomCard from "../components/EmomCard";
 import VideoExerciseCard from "../components/VideoExerciseCard";
 import ExerciseSearch from "../components/ExerciseSearch";
 
+function getExerciseSets(exercise) {
+  return Array.isArray(exercise?.sets) ? exercise.sets : [];
+}
+
+function getWorkoutStartMs(workout) {
+  if (workout?.startTimestamp) return workout.startTimestamp;
+  if (!workout?.startTime) return Date.now();
+
+  const [h, m] = workout.startTime.split(":").map(Number);
+  const d = new Date();
+  d.setHours(h, m, 0, 0);
+  return d.getTime();
+}
+
+function getElapsedSeconds(workout, isPaused, pausedAt, pausedAcc) {
+  if (!workout) return 0;
+
+  const compareTime = isPaused && pausedAt ? pausedAt : Date.now();
+  const raw = (compareTime - getWorkoutStartMs(workout)) / 1000;
+  return Math.max(0, Math.floor(raw) - (pausedAcc || 0));
+}
+
+function getExerciseStructureSignature(exercise) {
+  if (!exercise) return null;
+
+  const isEmom = exercise.isEmom || exercise.params?.includes("emom");
+  if (isEmom) {
+    const blocks = Array.isArray(exercise.emomBlocks) ? exercise.emomBlocks : [];
+    const normalizedBlocks = blocks.map(block => ({
+      minutes: Math.max(1, Number(block?.minutes) || 1),
+      reps: Math.max(1, Number(block?.reps) || 1),
+    }));
+
+    return {
+      name: exercise.name,
+      isEmom: true,
+      blocks: normalizedBlocks,
+    };
+  }
+
+  return {
+    name: exercise.name,
+    isEmom: false,
+    setsCount: exercise.setsCount || getExerciseSets(exercise).length,
+  };
+}
+
 export default function ActiveWorkout({
   workout,
   routines,
@@ -40,29 +87,19 @@ export default function ActiveWorkout({
       if (workout.isPaused !== undefined && workout.isPaused !== paused) setPaused(workout.isPaused);
       if (workout.pausedAt !== undefined) pausedAtRef.current = workout.pausedAt;
       if (workout.pausedAcc !== undefined) pausedAccRef.current = workout.pausedAcc;
+      setLocalSessionNotes(workout.notes || "");
+      setElapsed(getElapsedSeconds(workout, !!workout.isPaused, workout.pausedAt, workout.pausedAcc));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workout?.id]);
+  }, [workout?.id, workout?.notes, workout?.isPaused, workout?.pausedAt, workout?.pausedAcc]);
 
   // Elapsed timer with pause support
   useEffect(() => {
     if (!workout) return;
     if (paused) return;
 
-    const getStartMs = () => {
-      if (workout.startTimestamp) return workout.startTimestamp;
-      if (!workout.startTime) return Date.now();
-      const [h, m] = workout.startTime.split(":").map(Number);
-      const d = new Date();
-      d.setHours(h, m, 0, 0);
-      return d.getTime();
-    };
-
-    const startMs = getStartMs();
-
     const tick = () => {
-      const raw = (Date.now() - startMs) / 1000;
-      setElapsed(Math.max(0, Math.floor(raw) - pausedAccRef.current));
+      setElapsed(getElapsedSeconds(workout, false, null, pausedAccRef.current));
     };
     tick();
     const id = setInterval(tick, 1000);
@@ -108,6 +145,12 @@ export default function ActiveWorkout({
     timer.start(duration, label);
   };
 
+  const handleCancelRest = (setId) => {
+    if (activeRestSetId !== setId) return;
+    timer.dismiss();
+    setActiveRestSetId(null);
+  };
+
   // When timer is dismissed externally, clear active set
   useEffect(() => {
     if (!timer.isActive) setActiveRestSetId(null);
@@ -141,7 +184,7 @@ export default function ActiveWorkout({
   }
 
   const totalCompleted = workout.exercises.reduce(
-    (s, ex) => s + ex.sets.filter((st) => st.completed).length,
+    (s, ex) => s + getExerciseSets(ex).filter((st) => st.completed).length,
     0,
   );
 
@@ -159,7 +202,21 @@ export default function ActiveWorkout({
 
       return routine.exercises.every((routineEx, index) => {
         const workoutEx = currentWorkout.exercises[index];
-        return routineEx.name === workoutEx.name && routineEx.setsCount === workoutEx.sets.length;
+        const routineSig = getExerciseStructureSignature(routineEx);
+        const workoutSig = getExerciseStructureSignature(workoutEx);
+
+        if (!routineSig || !workoutSig) return false;
+        if (routineSig.name !== workoutSig.name || routineSig.isEmom !== workoutSig.isEmom) return false;
+
+        if (routineSig.isEmom) {
+          if (routineSig.blocks.length !== workoutSig.blocks.length) return false;
+          return routineSig.blocks.every((block, blockIndex) => {
+            const workoutBlock = workoutSig.blocks[blockIndex];
+            return block.minutes === workoutBlock.minutes && block.reps === workoutBlock.reps;
+          });
+        }
+
+        return routineSig.setsCount === workoutSig.setsCount;
       });
     });
   };
@@ -253,6 +310,7 @@ export default function ActiveWorkout({
               onToggleSet={onToggleSet}
               onRemoveExercise={onRemoveExercise}
               onStartRest={handleStartRest}
+              onCancelRest={handleCancelRest}
               onUpdateNotes={onUpdateExerciseNotes}
               onUpdateExerciseRest={onUpdateExerciseRest}
               activeRestSetId={activeRestSetId}

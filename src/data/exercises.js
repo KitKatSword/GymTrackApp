@@ -1,3 +1,5 @@
+import { toLocalDateString } from '../utils/date'
+
 const exercises = [
     // Petto
     { id: 'bench-press', name: 'Panca Piana', category: 'Petto', emoji: '🏋️', params: ['weight', 'reps'] },
@@ -146,7 +148,7 @@ export function exportAllData() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `gymtrack-backup-${new Date().toISOString().split('T')[0]}.json`
+    a.download = `gymtrack-backup-${toLocalDateString()}.json`
     a.click()
     URL.revokeObjectURL(url)
 }
