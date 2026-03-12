@@ -45,9 +45,10 @@ export default function ExerciseCard({
     const sets = Array.isArray(exercise.sets) ? exercise.sets : [];
 
     const params = exercise.params || ["weight", "reps"];
+    const canRemoveSets = !isPastLog && typeof onRemoveSet === "function";
     const gridTemplate = isPastLog
         ? `28px ${params.map(() => "1fr").join(" ")}`
-        : `28px ${params.map(() => "1fr").join(" ")} 36px`;
+        : `28px ${params.map(() => "1fr").join(" ")} 36px${canRemoveSets ? " 32px" : ""}`;
 
     const isResting = sets.some(s => s.id === activeRestSetId);
 
@@ -122,6 +123,7 @@ export default function ExerciseCard({
                     </div>
                 ))}
                 {!isPastLog && <div className="set-label">✓</div>}
+                {canRemoveSets && <div className="set-label"> </div>}
             </div>
 
             {sets.map((set, idx) => {
@@ -158,20 +160,41 @@ export default function ExerciseCard({
                         ))}
 
                         {!isPastLog && (
-                            <button
-                                className={`check-btn ${set.completed ? "checked" : ""}`}
-                                onClick={() => {
-                                    if (set.completed && onCancelRest) {
-                                        onCancelRest(set.id);
-                                    }
-                                    onToggleSet(workoutId, exercise.id, set.id);
-                                    if (!set.completed) {
-                                        onStartRest(exercise.name, idx + 1, set.id, targetRest);
-                                    }
-                                }}
-                            >
-                                {set.completed ? "✓" : ""}
-                            </button>
+                            <>
+                                <button
+                                    className={`check-btn ${set.completed ? "checked" : ""}`}
+                                    onClick={() => {
+                                        if (set.completed && onCancelRest) {
+                                            onCancelRest(set.id);
+                                        }
+                                        onToggleSet(workoutId, exercise.id, set.id);
+                                        if (!set.completed) {
+                                            onStartRest(exercise.name, idx + 1, set.id, targetRest);
+                                        }
+                                    }}
+                                >
+                                    {set.completed ? "✓" : ""}
+                                </button>
+
+                                {canRemoveSets && (
+                                    <button
+                                        type="button"
+                                        className="set-remove-btn"
+                                        aria-label={`Elimina serie ${idx + 1}`}
+                                        onClick={() => {
+                                            if (isRestingThis && onCancelRest) {
+                                                onCancelRest(set.id);
+                                            }
+                                            onRemoveSet(workoutId, exercise.id, set.id);
+                                        }}
+                                    >
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M18 6 6 18" />
+                                            <path d="m6 6 12 12" />
+                                        </svg>
+                                    </button>
+                                )}
+                            </>
                         )}
                     </div>
                 );

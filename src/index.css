@@ -204,8 +204,6 @@ body {
     min-height: 100dvh;
     overscroll-behavior: none;
     -webkit-font-smoothing: antialiased;
-    -webkit-user-select: none;
-    user-select: none;
 }
 
 #root {
@@ -226,16 +224,8 @@ select {
     background: none;
 }
 
-input,
-textarea {
-    -webkit-user-select: auto;
-    user-select: auto;
-}
-
 button {
     cursor: pointer;
-    -webkit-user-select: none;
-    user-select: none;
 }
 
 a {
@@ -1098,6 +1088,26 @@ ol {
 
 .check-btn:active {
     transform: scale(0.88);
+}
+
+.set-remove-btn {
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.set-remove-btn:active {
+    color: var(--danger);
+    background: var(--bg-card-hover);
+    transform: scale(0.92);
 }
 
 .rest-btn {

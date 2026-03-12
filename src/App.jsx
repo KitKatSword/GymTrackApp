@@ -84,55 +84,6 @@ export default function App() {
         localStorage.setItem('gymtrack_theme', theme)
     }, [theme])
 
-    // Global drag-to-close for all modals
-    useEffect(() => {
-        let startY = 0
-        let modalEl = null
-
-        const handleTouchStart = (e) => {
-            const target = e.target.closest('.modal')
-            if (!target) return
-            startY = e.touches[0].clientY
-            modalEl = target
-            modalEl.style.transition = 'none'
-        }
-
-        const handleTouchMove = (e) => {
-            if (!modalEl) return
-            const currentY = e.touches[0].clientY
-            const diff = currentY - startY
-            // Swipe down only
-            if (diff > 0 && modalEl.scrollTop <= 0) {
-                modalEl.style.transform = `translateY(${diff}px)`
-            }
-        }
-
-        const handleTouchEnd = (e) => {
-            if (!modalEl) return
-            const diff = e.changedTouches[0].clientY - startY
-            modalEl.style.transition = 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
-            if (diff > 120 && modalEl.scrollTop <= 0) {
-                // Dragged far enough, close the modal by clicking its overlay
-                const overlay = modalEl.closest('.modal-overlay')
-                if (overlay) {
-                    overlay.click()
-                }
-            } else {
-                // Bounce back
-                modalEl.style.transform = ''
-            }
-            modalEl = null
-        }
-
-        document.addEventListener('touchstart', handleTouchStart, { passive: true })
-        document.addEventListener('touchmove', handleTouchMove, { passive: true })
-        document.addEventListener('touchend', handleTouchEnd)
-        return () => {
-            document.removeEventListener('touchstart', handleTouchStart)
-            document.removeEventListener('touchmove', handleTouchMove)
-            document.removeEventListener('touchend', handleTouchEnd)
-        }
-    }, [])
 
     const toggleTheme = useCallback(() => {
         setTheme(t => t === 'dark' ? 'light' : 'dark')
@@ -149,9 +100,23 @@ export default function App() {
         updateExerciseRest, updateWorkoutColor, updateWorkoutTimerState, updateEmomExercise, createWorkoutOnDate, loadRoutineIntoWorkout,
     } = workoutActions
 
-    const activeWorkout = workouts.find(w => w.id === activeWorkoutId) || null
+    const activeWorkout = workouts.find(w => w.id === activeWorkoutId && !w.endTime) || null
     const todayWorkout = getTodayWorkout()
     const stats = getStats()
+
+    const clearActiveWorkout = useCallback(() => {
+        setActiveWorkoutId(null)
+        localStorage.removeItem('gymtrack_active_workout')
+    }, [])
+
+    useEffect(() => {
+        if (!activeWorkoutId) return
+
+        const persistedWorkout = workouts.find(workout => workout.id === activeWorkoutId)
+        if (!persistedWorkout || persistedWorkout.endTime) {
+            clearActiveWorkout()
+        }
+    }, [activeWorkoutId, workouts, clearActiveWorkout])
 
     const handleStartWorkout = useCallback(() => {
         const w = createWorkout()
@@ -175,11 +140,10 @@ export default function App() {
         const finishedWorkout = workouts.find(w => w.id === id)
         syncRoutineRestTargetsFromWorkout(finishedWorkout, routineActions.routines, routineActions.updateRoutine)
         finishWorkout(id)
-        setActiveWorkoutId(null)
-        localStorage.removeItem('gymtrack_active_workout')
+        clearActiveWorkout()
         timer.dismiss()
         setActiveTab('home')
-    }, [finishWorkout, timer, workouts, routineActions])
+    }, [clearActiveWorkout, finishWorkout, timer, workouts, routineActions])
 
     const handleDuplicate = useCallback((id) => {
         const w = duplicateWorkout(id)
@@ -208,10 +172,10 @@ export default function App() {
         const finishedWorkout = workouts.find(w => w.id === id)
         syncRoutineRestTargetsFromWorkout(finishedWorkout, routineActions.routines, routineActions.updateRoutine)
         finishWorkout(id, startTime, endTime, true)
-        setActiveWorkoutId(null)
-        localStorage.removeItem('gymtrack_active_workout')
+        clearActiveWorkout()
+        timer.dismiss()
         setActiveTab('history')
-    }, [finishWorkout, workouts, routineActions])
+    }, [clearActiveWorkout, finishWorkout, timer, workouts, routineActions])
 
     const handleExport = useCallback(() => {
         exportAllData()
@@ -229,43 +193,9 @@ export default function App() {
         e.target.value = ''
     }, [])
 
-    const touchStartX = useRef(0)
-    const touchEndX = useRef(0)
-    const touchStartY = useRef(0)
-
-    const handleTouchStart = (e) => {
-        touchStartX.current = e.targetTouches[0].clientX
-        touchStartY.current = e.targetTouches[0].clientY
-    }
-
-    const handleTouchMove = (e) => {
-        touchEndX.current = e.targetTouches[0].clientX
-    }
-
-    const handleTouchEnd = () => {
-        if (!touchStartX.current || !touchEndX.current) return
-        const distanceX = touchStartX.current - touchEndX.current
-        // Need to ensure it's mainly a horizontal swipe
-        if (Math.abs(distanceX) > 60) {
-            const mainTabs = TABS.map(t => t.id)
-            const idx = mainTabs.indexOf(activeTab)
-            if (idx !== -1) {
-                if (distanceX > 0 && idx < mainTabs.length - 1) setActiveTab(mainTabs[idx + 1])
-                if (distanceX < 0 && idx > 0) setActiveTab(mainTabs[idx - 1])
-            }
-        }
-        touchStartX.current = 0
-        touchEndX.current = 0
-        touchStartY.current = 0
-    }
 
     return (
-        <div
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-            style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
-        >
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
             {activeTab === 'home' && (
                 <Home
                     stats={stats}
@@ -352,7 +282,7 @@ export default function App() {
                     onUpdateExerciseRest={updateExerciseRest}
                     onUpdateEmom={updateEmomExercise}
                     onFinish={handleFinishPastWorkout}
-                    onGoBack={() => { setActiveWorkoutId(null); localStorage.removeItem('gymtrack_active_workout'); deleteWorkout(activeWorkout?.id); setActiveTab('history') }}
+                    onGoBack={() => { clearActiveWorkout(); deleteWorkout(activeWorkout?.id); setActiveTab('history') }}
                     onCreateRoutine={routineActions.createRoutine}
                     onLoadRoutine={loadRoutineIntoWorkout}
                 />

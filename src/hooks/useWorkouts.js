@@ -3,6 +3,9 @@ import { getStartOfWeekDateString, toLocalDateString } from '../utils/date'
 import { getWorkoutCompletedSetCount } from '../utils/workouts'
 
 const STORAGE_KEY = 'gymtrack_workouts'
+const DEFAULT_PARAMS = ['weight', 'reps']
+const DEFAULT_ROUTINE_COLOR = '#8b5cf6'
+const DEFAULT_TARGET_REST = 90
 
 function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2, 9)
@@ -19,6 +22,101 @@ function loadWorkouts() {
 
 function saveWorkouts(workouts) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(workouts))
+}
+
+function getExerciseParams(exercise) {
+    return exercise?.params?.length ? exercise.params : DEFAULT_PARAMS
+}
+
+function createEmptySet(params) {
+    const set = { id: generateId(), completed: false }
+    params.forEach(param => {
+        set[param] = ''
+    })
+    return set
+}
+
+function hasTrackedValue(value) {
+    return value !== undefined && value !== null && value !== ''
+}
+
+function findLastSetsForExercise(workouts, exerciseName, params) {
+    const trackedParams = params?.length ? params : DEFAULT_PARAMS
+
+    for (const w of workouts) {
+        if (!w.endTime) continue
+        const match = w.exercises.find(e => e.name === exerciseName && !e.isEmom && !(e.params || []).includes('emom'))
+        if (match && Array.isArray(match.sets) && match.sets.length > 0) {
+            const meaningfulSets = match.sets.filter(set =>
+                set?.completed || trackedParams.some(param => hasTrackedValue(set?.[param]))
+            )
+
+            if (meaningfulSets.length === 0) continue
+
+            return meaningfulSets.map(set => {
+                const prefilled = { id: generateId(), completed: false }
+                trackedParams.forEach(param => {
+                    prefilled[param] = hasTrackedValue(set?.[param]) ? set[param] : ''
+                })
+                return prefilled
+            })
+        }
+    }
+
+    return null
+}
+
+function buildTrackedSets(params, preferredCount, previousSets) {
+    const totalSets = Math.max(1, preferredCount || previousSets?.length || 0)
+    return Array.from({ length: totalSets }, (_, index) => previousSets?.[index] || createEmptySet(params))
+}
+
+function createEmomExercise(exercise) {
+    return {
+        id: generateId(),
+        name: exercise.name,
+        emoji: exercise.emoji || '',
+        category: exercise.category,
+        params: ['emom'],
+        isCustom: exercise.isCustom || false,
+        isEmom: true,
+        image: exercise.image || null,
+        emomBlocks: exercise.emomBlocks || [{ minutes: 10, reps: 5 }],
+        emomWeight: exercise.emomWeight || '',
+        emomCompleted: false,
+        emomStartedAt: null,
+        emomPausedAt: null,
+        emomPausedAcc: 0,
+        sets: [],
+    }
+}
+
+function createTrackedExercise(exercise, workouts, preferredSetCount) {
+    const params = getExerciseParams(exercise)
+    const previousSets = findLastSetsForExercise(workouts, exercise.name, params)
+
+    return {
+        id: generateId(),
+        name: exercise.name,
+        emoji: exercise.emoji || '',
+        category: exercise.category,
+        params,
+        isCustom: exercise.isCustom || false,
+        image: exercise.image || null,
+        targetRest: exercise.targetRest || DEFAULT_TARGET_REST,
+        sets: buildTrackedSets(params, preferredSetCount, previousSets),
+    }
+}
+
+function createExerciseFromTemplate(exercise, workouts, preferredSetCount) {
+    const params = getExerciseParams(exercise)
+    const isEmom = exercise.isEmom || params.includes('emom')
+
+    if (isEmom) {
+        return createEmomExercise(exercise)
+    }
+
+    return createTrackedExercise(exercise, workouts, preferredSetCount)
 }
 
 export default function useWorkouts() {
@@ -44,42 +142,7 @@ export default function useWorkouts() {
 
     const createWorkoutFromRoutine = useCallback((routine) => {
         const now = new Date()
-        const exercises = routine.exercises.map(rex => {
-            const params = rex.params || ['weight', 'reps']
-            const isEmom = rex.isEmom || params.includes('emom')
-            if (isEmom) {
-                return {
-                    id: generateId(),
-                    name: rex.name,
-                    emoji: rex.emoji || '',
-                    category: rex.category,
-                    params: ['emom'],
-                    isCustom: rex.isCustom || false,
-                    isEmom: true,
-                    image: rex.image || null,
-                    emomBlocks: rex.emomBlocks || [{ minutes: 10, reps: 5 }],
-                    emomWeight: rex.emomWeight || '',
-                    emomCompleted: false,
-                    sets: [],
-                }
-            }
-            const sets = Array.from({ length: rex.setsCount || 3 }, () => {
-                const set = { id: generateId(), completed: false }
-                params.forEach(p => { set[p] = '' })
-                return set
-            })
-            return {
-                id: generateId(),
-                name: rex.name,
-                emoji: rex.emoji || '',
-                category: rex.category,
-                params,
-                isCustom: rex.isCustom || false,
-                image: rex.image || null,
-                targetRest: rex.targetRest || 90,
-                sets,
-            }
-        })
+        const exercises = routine.exercises.map(rex => createExerciseFromTemplate(rex, workouts, rex.setsCount || 3))
         const workout = {
             id: generateId(),
             date: toLocalDateString(now),
@@ -87,12 +150,12 @@ export default function useWorkouts() {
             startTimestamp: now.getTime(),
             endTime: null,
             routineName: routine.name,
-            routineColor: routine.color || '#8b5cf6',
+            routineColor: routine.color || DEFAULT_ROUTINE_COLOR,
             exercises,
         }
         setWorkouts(prev => [workout, ...prev])
         return workout
-    }, [])
+    }, [workouts])
 
     // Log a completed Fixfit follow-along video as a workout entry
     const logVideoWorkout = useCallback((video) => {
@@ -147,7 +210,18 @@ export default function useWorkouts() {
                 ...w,
                 startTime: startTimeOverride || w.startTime,
                 endTime: endTimeOverride || new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
+                isPaused: false,
+                pausedAt: null,
                 exercises: updatedExercises
+                    .map(ex => ex.isEmom
+                        ? {
+                            ...ex,
+                            emomStartedAt: null,
+                            emomPausedAt: null,
+                            emomPausedAcc: 0,
+                        }
+                        : ex
+                    )
             };
         }))
     }, [])
@@ -157,49 +231,18 @@ export default function useWorkouts() {
     }, [])
 
     const addExercise = useCallback((workoutId, exercise) => {
-        const params = exercise.params || ['weight', 'reps']
-        const isEmom = exercise.isEmom || params.includes('emom')
+        const params = getExerciseParams(exercise)
+        const preferredSetCount = params.includes('emom')
+            ? undefined
+            : findLastSetsForExercise(workouts, exercise.name, params)?.length || 1
+        const newExercise = createExerciseFromTemplate(exercise, workouts, preferredSetCount)
 
-        if (isEmom) {
-            const newExercise = {
-                id: generateId(),
-                name: exercise.name,
-                emoji: exercise.emoji,
-                category: exercise.category,
-                params: ['emom'],
-                isCustom: exercise.isCustom || false,
-                isEmom: true,
-                emomBlocks: [{ minutes: 10, reps: 5 }],
-                emomWeight: '',
-                emomCompleted: false,
-                sets: [],
-            }
-            setWorkouts(prev => prev.map(w =>
-                w.id === workoutId
-                    ? { ...w, exercises: [...w.exercises, newExercise] }
-                    : w
-            ))
-            return
-        }
-
-        const initialSet = { id: generateId(), completed: false }
-        params.forEach(p => { initialSet[p] = '' })
-        const newExercise = {
-            id: generateId(),
-            name: exercise.name,
-            emoji: exercise.emoji,
-            category: exercise.category,
-            params: params,
-            isCustom: exercise.isCustom || false,
-            targetRest: exercise.targetRest || 90,
-            sets: [initialSet],
-        }
         setWorkouts(prev => prev.map(w =>
             w.id === workoutId
                 ? { ...w, exercises: [...w.exercises, newExercise] }
                 : w
         ))
-    }, [])
+    }, [workouts])
 
     const removeExercise = useCallback((workoutId, exerciseId) => {
         setWorkouts(prev => prev.map(w =>
@@ -289,9 +332,15 @@ export default function useWorkouts() {
             startTime: now.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
             startTimestamp: now.getTime(),
             endTime: null,
+            isPaused: false,
+            pausedAt: null,
+            pausedAcc: 0,
             exercises: original.exercises.map(e => ({
                 ...e,
                 emomCompleted: e.isEmom ? false : e.emomCompleted,
+                emomStartedAt: e.isEmom ? null : e.emomStartedAt,
+                emomPausedAt: e.isEmom ? null : e.emomPausedAt,
+                emomPausedAcc: e.isEmom ? 0 : e.emomPausedAcc,
                 id: generateId(),
                 sets: e.sets.map(s => ({ ...s, id: generateId(), completed: false })),
             })),
@@ -371,47 +420,13 @@ export default function useWorkouts() {
     }, [])
 
     const loadRoutineIntoWorkout = useCallback((workoutId, routine) => {
-        const exercises = routine.exercises.map(rex => {
-            const params = rex.params || ['weight', 'reps']
-            const isEmom = rex.isEmom || params.includes('emom')
-            if (isEmom) {
-                return {
-                    id: generateId(),
-                    name: rex.name,
-                    emoji: rex.emoji || '',
-                    category: rex.category,
-                    params: ['emom'],
-                    isCustom: rex.isCustom || false,
-                    isEmom: true,
-                    emomBlocks: rex.emomBlocks || [{ minutes: 10, reps: 5 }],
-                    emomWeight: rex.emomWeight || '',
-                    emomCompleted: false,
-                    sets: [],
-                }
-            }
-            const sets = Array.from({ length: rex.setsCount || 3 }, () => {
-                const set = { id: generateId(), completed: false }
-                params.forEach(p => { set[p] = '' })
-                return set
-            })
-            return {
-                id: generateId(),
-                name: rex.name,
-                emoji: rex.emoji || '',
-                category: rex.category,
-                params,
-                isCustom: rex.isCustom || false,
-                image: rex.image || null,
-                targetRest: rex.targetRest || 90,
-                sets,
-            }
-        })
+        const exercises = routine.exercises.map(rex => createExerciseFromTemplate(rex, workouts, rex.setsCount || 3))
         setWorkouts(prev => prev.map(w =>
             w.id === workoutId
                 ? { ...w, exercises: [...w.exercises, ...exercises], routineName: routine.name, routineColor: routine.color || '#8b5cf6' }
                 : w
         ))
-    }, [])
+    }, [workouts])
 
     const getTodayWorkout = useCallback(() => {
         const today = toLocalDateString()
