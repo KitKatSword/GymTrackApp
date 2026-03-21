@@ -136,10 +136,10 @@ export default function App() {
         setActiveTab('active-workout')
     }, [activeWorkout, todayWorkout])
 
-    const handleFinishWorkout = useCallback((id) => {
+    const handleFinishWorkout = useCallback((id, newRoutineName = null) => {
         const finishedWorkout = workouts.find(w => w.id === id)
         syncRoutineRestTargetsFromWorkout(finishedWorkout, routineActions.routines, routineActions.updateRoutine)
-        finishWorkout(id)
+        finishWorkout(id, null, null, false, newRoutineName)
         clearActiveWorkout()
         timer.dismiss()
         setActiveTab('home')
@@ -168,10 +168,10 @@ export default function App() {
         setActiveTab('log-past')
     }, [createWorkoutOnDate])
 
-    const handleFinishPastWorkout = useCallback((id, startTime, endTime) => {
+    const handleFinishPastWorkout = useCallback((id, startTime, endTime, newRoutineName = null) => {
         const finishedWorkout = workouts.find(w => w.id === id)
         syncRoutineRestTargetsFromWorkout(finishedWorkout, routineActions.routines, routineActions.updateRoutine)
-        finishWorkout(id, startTime, endTime, true)
+        finishWorkout(id, startTime, endTime, true, newRoutineName)
         clearActiveWorkout()
         timer.dismiss()
         setActiveTab('history')

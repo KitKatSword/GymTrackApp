@@ -256,11 +256,12 @@ export default function LogPastWorkout({
                             <button
                                 className="btn btn-primary"
                                 onClick={() => {
+                                    let finalName = null;
                                     if (saveAsRoutine) {
-                                        const finalName = routineName.trim() || `Routine del ${formatDate(workout.date)}`;
+                                        finalName = routineName.trim() || `Routine del ${formatDate(workout.date)}`;
                                         if (onCreateRoutine) onCreateRoutine(finalName, workout.exercises);
                                     }
-                                    onFinish(workout.id, startTime, endTime);
+                                    onFinish(workout.id, startTime, endTime, finalName);
                                     setShowFinishConfirm(false);
                                 }}
                             >

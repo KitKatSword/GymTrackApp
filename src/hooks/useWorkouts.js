@@ -189,7 +189,7 @@ export default function useWorkouts() {
         return workout
     }, [])
 
-    const finishWorkout = useCallback((workoutId, startTimeOverride, endTimeOverride, autoCompleteAll = false) => {
+    const finishWorkout = useCallback((workoutId, startTimeOverride, endTimeOverride, autoCompleteAll = false, newRoutineName = null) => {
         setWorkouts(prev => prev.map(w => {
             if (w.id !== workoutId) return w;
 
@@ -210,6 +210,7 @@ export default function useWorkouts() {
                 ...w,
                 startTime: startTimeOverride || w.startTime,
                 endTime: endTimeOverride || new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
+                ...(newRoutineName && { routineName: newRoutineName }),
                 isPaused: false,
                 pausedAt: null,
                 exercises: updatedExercises

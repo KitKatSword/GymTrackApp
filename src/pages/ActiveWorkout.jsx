@@ -397,11 +397,12 @@ export default function ActiveWorkout({
                 <button
                   className="btn btn-primary"
                   onClick={() => {
+                    let finalName = null;
                     if (saveAsRoutine) {
-                      const finalName = routineName.trim() || `Routine del ${new Date().toLocaleDateString()}`;
+                      finalName = routineName.trim() || `Routine del ${new Date().toLocaleDateString()}`;
                       if (onCreateRoutine) onCreateRoutine(finalName, workout.exercises);
                     }
-                    onFinish(workout.id);
+                    onFinish(workout.id, finalName);
                     setShowFinishConfirm(false);
                   }}
                 >
