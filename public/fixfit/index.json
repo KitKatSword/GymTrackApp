@@ -3,60 +3,60 @@
     "name": "Total Body",
     "slug": "esercizi-total-body",
     "file": "esercizi-total-body.json",
-    "count": 968
+    "count": 713
   },
   {
     "name": "Gambe e Glutei",
     "slug": "esercizi-glutei-e-gambe",
     "file": "esercizi-glutei-e-gambe.json",
-    "count": 137
+    "count": 81
   },
   {
     "name": "Addominali",
     "slug": "esercizi-addominali",
     "file": "esercizi-addominali.json",
-    "count": 95
+    "count": 54
   },
   {
     "name": "GAG",
     "slug": "esercizi-gag",
     "file": "esercizi-gag.json",
-    "count": 61
+    "count": 33
   },
   {
     "name": "Braccia e Spalle",
     "slug": "esercizi-braccia",
     "file": "esercizi-braccia.json",
-    "count": 136
+    "count": 76
   },
   {
     "name": "Principianti",
     "slug": "esercizi-facili-a-casa",
     "file": "esercizi-facili-a-casa.json",
-    "count": 321
+    "count": 186
   },
   {
     "name": "HIIT",
     "slug": "esercizi-hiit-brucia-grassi",
     "file": "esercizi-hiit-brucia-grassi.json",
-    "count": 183
+    "count": 108
   },
   {
     "name": "Senza Salti",
     "slug": "esercizi-senza-salti",
     "file": "esercizi-senza-salti.json",
-    "count": 611
+    "count": 346
   },
   {
     "name": "Stretching",
     "slug": "esercizi-di-stretching",
     "file": "esercizi-di-stretching.json",
-    "count": 55
+    "count": 27
   },
   {
     "name": "Workout Completi",
     "slug": "workout-fitness",
     "file": "workout-fitness.json",
-    "count": 301
+    "count": 169
   }
 ]
