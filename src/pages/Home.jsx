@@ -12,8 +12,17 @@ export default function Home({ stats, workouts, activeWorkout, onStartWorkout, o
     const monthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
         'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre']
 
-    const recentRoutineNames = [...new Set(workouts.filter(w => w.routineName).map(w => w.routineName))].slice(0, 4);
-    const recentRoutines = recentRoutineNames.map(name => routines.find(r => r.name === name)).filter(Boolean);
+    const recentRoutines = [...workouts]
+        .filter(workout => workout.endTime && (workout.routineId || workout.routineName))
+        .sort((a, b) => {
+            const aTime = Number(a.endTimestamp) || Date.parse(`${a.date}T${a.startTime || '00:00'}:00`) || Number(a.startTimestamp) || 0
+            const bTime = Number(b.endTimestamp) || Date.parse(`${b.date}T${b.startTime || '00:00'}:00`) || Number(b.startTimestamp) || 0
+            return bTime - aTime
+        })
+        .map(workout => routines.find(routine => routine.id === workout.routineId)
+            || routines.find(routine => routine.name === workout.routineName))
+        .filter((routine, index, items) => routine && items.findIndex(item => item?.id === routine.id) === index)
+        .slice(0, 4)
 
     return (
         <div className="page">

@@ -7,6 +7,7 @@ function formatRestTime(restSeconds) {
 function renderSetValue(set, param) {
     if (param === 'weight') return `${set.weight || 0} kg`
     if (param === 'reps') return `${set.reps || 0} reps`
+    if (param === 'rir') return `RIR ${set.rir ?? 0}`
     if (param === 'time') return `${set.time || 0}s`
     return `${set[param] || 0}`
 }
@@ -19,17 +20,25 @@ function CompletedSetsSummary({ exercise }) {
 
     return (
         <div className="history-params-panel">
-            {completedSets.map((set, index) => (
+            {completedSets.map((set, index) => {
+                const sameTypeIndex = completedSets
+                    .slice(0, index + 1)
+                    .filter(candidate => Boolean(candidate.isWarmup) === Boolean(set.isWarmup))
+                    .length
+                return (
                 <div
                     key={set.id || `${exercise.id || exercise.name}-set-${index}`}
                     className="history-param-row"
                 >
-                    <span className="history-param-label">Set {index + 1}</span>
+                    <span className={`history-param-label ${set.isWarmup ? 'warmup' : ''}`}>
+                        {set.isWarmup ? `Risc. ${sameTypeIndex}` : `Set ${sameTypeIndex}`}
+                    </span>
                     <span className="history-param-value">
                         {params.map(param => renderSetValue(set, param)).join(' x ')}
                     </span>
                 </div>
-            ))}
+                )
+            })}
         </div>
     )
 }

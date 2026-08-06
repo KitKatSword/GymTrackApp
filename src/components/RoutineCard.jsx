@@ -9,6 +9,7 @@ export default function RoutineCard({
     style = {},
 }) {
     const totalSets = getRoutineTotalSets(routine)
+    const emomCount = routine.exercises.filter(exercise => exercise.isEmom || exercise.params?.includes('emom')).length
 
     return (
         <div
@@ -20,7 +21,9 @@ export default function RoutineCard({
                 <div>
                     <div className="routine-card-title">{routine.name}</div>
                     <div className="routine-card-meta">
-                        {routine.exercises.length} esercizi · {totalSets} serie
+                        {routine.exercises.length} esercizi
+                        {totalSets > 0 ? ` · ${totalSets} serie` : ''}
+                        {emomCount > 0 ? ` · ${emomCount} EMOM` : ''}
                     </div>
                 </div>
                 {action}

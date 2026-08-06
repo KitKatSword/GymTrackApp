@@ -20,7 +20,7 @@ export default function ActivityHeatmap({ workouts }) {
                     if (ex.isEmom && ex.emomCompleted) {
                         setsCount += 3;
                     } else if (Array.isArray(ex.sets)) {
-                        setsCount += ex.sets.filter(s => s.completed).length;
+                        setsCount += ex.sets.filter(s => s.completed && !s.isWarmup).length;
                     }
                 });
             }

@@ -3,16 +3,14 @@ import ExerciseCard from "../components/ExerciseCard";
 import EmomCard from "../components/EmomCard";
 import VideoExerciseCard from "../components/VideoExerciseCard";
 import ExerciseSearch from "../components/ExerciseSearch";
-import { getExerciseSets } from "../utils/workouts";
+import { getCompletedWarmupSetCount, getCompletedWorkingSetCount, getExerciseSets } from "../utils/workouts";
 
 function getWorkoutStartMs(workout) {
   if (workout?.startTimestamp) return workout.startTimestamp;
   if (!workout?.startTime) return Date.now();
 
-  const [h, m] = workout.startTime.split(":").map(Number);
-  const d = new Date();
-  d.setHours(h, m, 0, 0);
-  return d.getTime();
+  const fallback = Date.parse(`${workout.date || ''}T${workout.startTime}:00`);
+  return Number.isFinite(fallback) ? fallback : Date.now();
 }
 
 function getElapsedSeconds(workout, isPaused, pausedAt, pausedAcc) {
@@ -44,7 +42,9 @@ function getExerciseStructureSignature(exercise) {
   return {
     name: exercise.name,
     isEmom: false,
-    setsCount: exercise.setsCount || getExerciseSets(exercise).length,
+    params: exercise.params || ["weight", "reps"],
+    setsCount: exercise.setsCount || getExerciseSets(exercise).filter(set => !set.isWarmup).length,
+    warmupSetsCount: exercise.warmupSetsCount ?? getExerciseSets(exercise).filter(set => set.isWarmup).length,
   };
 }
 
@@ -55,17 +55,21 @@ export default function ActiveWorkout({
   onAddExercise,
   onRemoveExercise,
   onAddSet,
+  onAddWarmupSet,
   onRemoveSet,
   onUpdateSet,
   onToggleSet,
   onUpdateNotes,
   onUpdateExerciseNotes,
   onUpdateExerciseRest,
+  onUpdateExerciseParams,
   onUpdateEmom,
   onUpdateTimerState,
   onFinish,
   onGoBack,
   onCreateRoutine,
+  getExerciseSetup,
+  onSaveExerciseSetup,
 }) {
   const [showSearch, setShowSearch] = useState(false);
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
@@ -81,9 +85,9 @@ export default function ActiveWorkout({
   // Sync state if workout changes (e.g. initial mount or resume after tab switch)
   useEffect(() => {
     if (workout) {
-      if (workout.isPaused !== undefined && workout.isPaused !== paused) setPaused(workout.isPaused);
-      if (workout.pausedAt !== undefined) pausedAtRef.current = workout.pausedAt;
-      if (workout.pausedAcc !== undefined) pausedAccRef.current = workout.pausedAcc;
+      if (!!workout.isPaused !== paused) setPaused(!!workout.isPaused);
+      pausedAtRef.current = workout.pausedAt || 0;
+      pausedAccRef.current = workout.pausedAcc || 0;
       setLocalSessionNotes(workout.notes || "");
       setElapsed(getElapsedSeconds(workout, !!workout.isPaused, workout.pausedAt, workout.pausedAcc));
     }
@@ -111,14 +115,27 @@ export default function ActiveWorkout({
       const now = Date.now();
       pausedAtRef.current = now;
       setPaused(true);
+      workout?.exercises?.forEach(exercise => {
+        if (exercise.isEmom && exercise.emomStartedAt && !exercise.emomCompleted && !exercise.emomPausedAt) {
+          onUpdateEmom?.(workout.id, exercise.id, { emomPausedAt: now });
+        }
+      });
       if (onUpdateTimerState && workout) {
         onUpdateTimerState(workout.id, { isPaused: true, pausedAt: now });
       }
     } else if (!shouldPause && paused) {
       const now = Date.now();
-      const pausedSecs = Math.floor((now - pausedAtRef.current) / 1000);
+      const pausedSecs = pausedAtRef.current ? Math.floor((now - pausedAtRef.current) / 1000) : 0;
       pausedAccRef.current += pausedSecs;
       setPaused(false);
+      workout?.exercises?.forEach(exercise => {
+        if (exercise.isEmom && exercise.emomStartedAt && !exercise.emomCompleted && exercise.emomPausedAt) {
+          onUpdateEmom?.(workout.id, exercise.id, {
+            emomPausedAt: null,
+            emomPausedAcc: (exercise.emomPausedAcc || 0) + (now - exercise.emomPausedAt),
+          });
+        }
+      });
       if (onUpdateTimerState && workout) {
         onUpdateTimerState(workout.id, { isPaused: false, pausedAt: null, pausedAcc: pausedAccRef.current });
       }
@@ -137,6 +154,7 @@ export default function ActiveWorkout({
   };
 
   const handleStartRest = (exerciseName, setIndex, setId, duration) => {
+    if (!duration || duration <= 0) return;
     const label = `${exerciseName} — Set ${setIndex}`;
     setActiveRestSetId(setId);
     timer.start(duration, label);
@@ -181,7 +199,11 @@ export default function ActiveWorkout({
   }
 
   const totalCompleted = workout.exercises.reduce(
-    (s, ex) => s + getExerciseSets(ex).filter((st) => st.completed).length,
+    (sum, exercise) => sum + getCompletedWorkingSetCount(exercise),
+    0,
+  );
+  const totalWarmups = workout.exercises.reduce(
+    (sum, exercise) => sum + getCompletedWarmupSetCount(exercise),
     0,
   );
 
@@ -213,7 +235,9 @@ export default function ActiveWorkout({
           });
         }
 
-        return routineSig.setsCount === workoutSig.setsCount;
+        return routineSig.setsCount === workoutSig.setsCount
+          && routineSig.warmupSetsCount === workoutSig.warmupSetsCount
+          && routineSig.params.join('|') === workoutSig.params.join('|');
       });
     });
   };
@@ -295,6 +319,8 @@ export default function ActiveWorkout({
               onUpdateEmom={onUpdateEmom}
               onUpdateNotes={onUpdateExerciseNotes}
               onEmomPause={handleEmomPause}
+              setup={getExerciseSetup?.(ex)}
+              onSaveSetup={onSaveExerciseSetup}
             />
           ) : (
             <ExerciseCard
@@ -302,6 +328,7 @@ export default function ActiveWorkout({
               exercise={ex}
               workoutId={workout.id}
               onAddSet={onAddSet}
+              onAddWarmupSet={onAddWarmupSet}
               onRemoveSet={onRemoveSet}
               onUpdateSet={onUpdateSet}
               onToggleSet={onToggleSet}
@@ -310,7 +337,10 @@ export default function ActiveWorkout({
               onCancelRest={handleCancelRest}
               onUpdateNotes={onUpdateExerciseNotes}
               onUpdateExerciseRest={onUpdateExerciseRest}
+              onUpdateExerciseParams={onUpdateExerciseParams}
               activeRestSetId={activeRestSetId}
+              setup={getExerciseSetup?.(ex)}
+              onSaveSetup={onSaveExerciseSetup}
             />
           )
         )
@@ -359,7 +389,7 @@ export default function ActiveWorkout({
                 Termina allenamento?
               </div>
               <div style={{ color: "var(--text-secondary)", fontSize: "var(--text-sm)" }}>
-                {totalCompleted} serie completate · {workout.exercises.length}{" "}
+                {totalCompleted} serie completate{totalWarmups > 0 ? ` + ${totalWarmups} riscaldamento` : ''} · {workout.exercises.length}{" "}
                 esercizi · {fmt(elapsed)}
               </div>
 

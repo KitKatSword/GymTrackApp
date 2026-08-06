@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { getAllExercises, getCustomExercises, saveCustomExercise, updateCustomExercise, deleteCustomExercise, categories, PARAM_TYPES } from '../data/exercises'
+import { getAllExercises, saveCustomExercise, updateCustomExercise, deleteCustomExercise, categories, PARAM_TYPES } from '../data/exercises'
 import { getInitials } from '../utils/text'
 
 function generateId() {
@@ -28,8 +28,13 @@ export default function ExerciseSearch({ onSelect, onClose }) {
         })
     }, [search, category, allExercises])
 
-    const toggleParam = (pid) =>
-        setNewParams(prev => prev.includes(pid) ? prev.filter(p => p !== pid) : [...prev, pid])
+    const toggleParam = (pid) => setNewParams(prev => {
+        if (pid === 'emom') return prev.includes('emom') ? [] : ['emom']
+        const withoutEmom = prev.filter(param => param !== 'emom')
+        return withoutEmom.includes(pid)
+            ? withoutEmom.filter(param => param !== pid)
+            : [...withoutEmom, pid]
+    })
 
     const handleCreate = () => {
         if (!newName.trim() || newParams.length === 0) return
@@ -71,8 +76,13 @@ export default function ExerciseSearch({ onSelect, onClose }) {
         setRefreshKey(k => k + 1)
     }
 
-    const toggleEditParam = (pid) =>
-        setEditParams(prev => prev.includes(pid) ? prev.filter(p => p !== pid) : [...prev, pid])
+    const toggleEditParam = (pid) => setEditParams(prev => {
+        if (pid === 'emom') return prev.includes('emom') ? [] : ['emom']
+        const withoutEmom = prev.filter(param => param !== 'emom')
+        return withoutEmom.includes(pid)
+            ? withoutEmom.filter(param => param !== pid)
+            : [...withoutEmom, pid]
+    })
 
     return (
         <div className="exercise-search">

@@ -2,7 +2,7 @@ import { useState } from "react";
 import ExerciseCard from "../components/ExerciseCard";
 import EmomCard from "../components/EmomCard";
 import ExerciseSearch from "../components/ExerciseSearch";
-import { getWorkoutCompletedSetCount } from "../utils/workouts";
+import { getExerciseSets } from "../utils/workouts";
 
 const MONTHS_SHORT = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
 
@@ -36,11 +36,13 @@ export default function LogPastWorkout({
     onAddExercise,
     onRemoveExercise,
     onAddSet,
+    onAddWarmupSet,
     onRemoveSet,
     onUpdateSet,
     onToggleSet,
     onUpdateExerciseNotes,
     onUpdateExerciseRest,
+    onUpdateExerciseParams,
     onUpdateEmom,
     onUpdateNotes,
     onFinish,
@@ -48,15 +50,18 @@ export default function LogPastWorkout({
     onCreateRoutine,
     onLoadRoutine,
     routines,
+    getExerciseSetup,
+    onSaveExerciseSetup,
 }) {
     const [showSearch, setShowSearch] = useState(false);
     const [showFinishConfirm, setShowFinishConfirm] = useState(false);
-    const [showRoutinePicker, setShowRoutinePicker] = useState(false);
     const [localSessionNotes, setLocalSessionNotes] = useState(workout?.notes || '');
     const [saveAsRoutine, setSaveAsRoutine] = useState(false);
     const [routineName, setRoutineName] = useState('');
     const [startTime, setStartTime] = useState(workout?.startTime || '09:00');
     const [endTime, setEndTime] = useState('10:00');
+    const hasValidTimes = /^([01]\d|2[0-3]):[0-5]\d$/.test(startTime)
+        && /^([01]\d|2[0-3]):[0-5]\d$/.test(endTime);
 
     if (!workout) {
         return (
@@ -69,7 +74,14 @@ export default function LogPastWorkout({
         );
     }
 
-    const totalCompleted = getWorkoutCompletedSetCount(workout);
+    const totalCompleted = workout.exercises.reduce(
+        (sum, exercise) => sum + getExerciseSets(exercise).filter(set => !set.isWarmup).length,
+        0,
+    );
+    const totalWarmups = workout.exercises.reduce(
+        (sum, exercise) => sum + getExerciseSets(exercise).filter(set => set.isWarmup).length,
+        0,
+    );
 
     const handleStartRest = () => { };
 
@@ -77,7 +89,6 @@ export default function LogPastWorkout({
         if (onLoadRoutine) {
             onLoadRoutine(workout.id, routine);
         }
-        setShowRoutinePicker(false);
     };
 
     return (
@@ -124,6 +135,11 @@ export default function LogPastWorkout({
                     />
                 </div>
             </div>
+            {!hasValidTimes && (
+                <div className="media-error" style={{ marginTop: 'calc(-1 * var(--space-2))', marginBottom: 'var(--space-3)' }}>
+                    Inserisci un orario di inizio e fine valido.
+                </div>
+            )}
 
             {/* Quick routine loader */}
             {workout.exercises.length === 0 && routines && routines.length > 0 && (
@@ -156,6 +172,8 @@ export default function LogPastWorkout({
                         onUpdateEmom={onUpdateEmom}
                         onUpdateNotes={onUpdateExerciseNotes}
                         isPastLog={true}
+                        setup={getExerciseSetup?.(ex)}
+                        onSaveSetup={onSaveExerciseSetup}
                     />
                 ) : (
                     <ExerciseCard
@@ -163,6 +181,7 @@ export default function LogPastWorkout({
                         exercise={ex}
                         workoutId={workout.id}
                         onAddSet={onAddSet}
+                        onAddWarmupSet={onAddWarmupSet}
                         onRemoveSet={onRemoveSet}
                         onUpdateSet={onUpdateSet}
                         onToggleSet={onToggleSet}
@@ -170,8 +189,11 @@ export default function LogPastWorkout({
                         onStartRest={handleStartRest}
                         onUpdateNotes={onUpdateExerciseNotes}
                         onUpdateExerciseRest={onUpdateExerciseRest}
+                        onUpdateExerciseParams={onUpdateExerciseParams}
                         activeRestSetId={null}
                         isPastLog={true}
+                        setup={getExerciseSetup?.(ex)}
+                        onSaveSetup={onSaveExerciseSetup}
                     />
                 )
             )}
@@ -197,7 +219,7 @@ export default function LogPastWorkout({
             <button
                 className="btn btn-primary btn-full log-past-save-btn"
                 onClick={() => setShowFinishConfirm(true)}
-                disabled={workout.exercises.length === 0}
+                disabled={workout.exercises.length === 0 || !hasValidTimes}
             >
                 <SaveIcon />
                 Salva Allenamento
@@ -220,7 +242,7 @@ export default function LogPastWorkout({
                             Salva allenamento del {formatDate(workout.date)}?
                         </div>
                         <div style={{ color: "var(--text-secondary)", fontSize: "var(--text-sm)" }}>
-                            {totalCompleted} serie completate · {workout.exercises.length} esercizi
+                            {totalCompleted} serie{totalWarmups > 0 ? ` + ${totalWarmups} riscaldamento` : ''} · {workout.exercises.length} esercizi
                             <br />
                             Orario: {startTime} – {endTime}
                         </div>
@@ -255,6 +277,7 @@ export default function LogPastWorkout({
                             </button>
                             <button
                                 className="btn btn-primary"
+                                disabled={!hasValidTimes}
                                 onClick={() => {
                                     let finalName = null;
                                     if (saveAsRoutine) {

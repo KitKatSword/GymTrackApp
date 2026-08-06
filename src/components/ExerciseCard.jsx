@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import TimePickerModal from "./TimePickerModal";
+import ExerciseSetupPanel from "./ExerciseSetupPanel";
 
 function getParamLabel(p) {
     switch (p) {
@@ -9,13 +10,31 @@ function getParamLabel(p) {
             return "REPS";
         case "time":
             return "SEC";
+        case "rir":
+            return "RIR";
         default:
             return p.toUpperCase();
     }
 }
 
 function getParamInputMode(p) {
-    return p === "weight" ? "decimal" : "numeric";
+    return p === "weight" || p === "rir" ? "decimal" : "numeric";
+}
+
+function getTrackingMode(params) {
+    const hasReps = params.includes("reps");
+    const hasRir = params.includes("rir");
+    if (hasReps && hasRir) return "reps-rir";
+    if (hasRir) return "rir";
+    return hasReps ? "reps" : "none";
+}
+
+function applyTrackingMode(params, mode) {
+    const base = params.filter(param => param !== "reps" && param !== "rir");
+    if (mode === "none") return base;
+    if (mode === "rir") return [...base, "rir"];
+    if (mode === "reps-rir") return [...base, "reps", "rir"];
+    return [...base, "reps"];
 }
 
 function formatMinSec(s) {
@@ -28,6 +47,7 @@ export default function ExerciseCard({
     exercise,
     workoutId,
     onAddSet,
+    onAddWarmupSet,
     onRemoveSet,
     onUpdateSet,
     onToggleSet,
@@ -36,19 +56,23 @@ export default function ExerciseCard({
     onCancelRest,
     onUpdateNotes,
     onUpdateExerciseRest,
+    onUpdateExerciseParams,
     activeRestSetId,
-    isPastLog = false
+    isPastLog = false,
+    setup = null,
+    onSaveSetup,
 }) {
-    const targetRest = exercise.targetRest || 90;
+    const targetRest = exercise.targetRest ?? 90;
     const [showTimePicker, setShowTimePicker] = useState(false);
     const [localNotes, setLocalNotes] = useState(exercise.notes || '');
     const sets = Array.isArray(exercise.sets) ? exercise.sets : [];
 
     const params = exercise.params || ["weight", "reps"];
-    const canRemoveSets = !isPastLog && typeof onRemoveSet === "function";
+    const canRemoveSets = typeof onRemoveSet === "function";
     const gridTemplate = isPastLog
-        ? `28px ${params.map(() => "1fr").join(" ")}`
+        ? `36px ${params.map(() => "1fr").join(" ")}${canRemoveSets ? " 32px" : ""}`
         : `28px ${params.map(() => "1fr").join(" ")} 36px${canRemoveSets ? " 32px" : ""}`;
+    const canConfigureRir = params.some(param => ["weight", "reps", "rir"].includes(param));
 
     const isResting = sets.some(s => s.id === activeRestSetId);
 
@@ -108,6 +132,28 @@ export default function ExerciseCard({
                 />
             )}
 
+            {canConfigureRir && onUpdateExerciseParams && (
+                <label className="exercise-tracking-mode">
+                    <span>Tracciamento</span>
+                    <select
+                        className="input"
+                        value={getTrackingMode(params)}
+                        onChange={(event) => onUpdateExerciseParams(
+                            workoutId,
+                            exercise.id,
+                            applyTrackingMode(params, event.target.value),
+                        )}
+                    >
+                        {params.some(param => param !== 'reps' && param !== 'rir') && (
+                            <option value="none">Senza reps/RIR</option>
+                        )}
+                        <option value="reps">Ripetizioni</option>
+                        <option value="reps-rir">Ripetizioni + RIR</option>
+                        <option value="rir">Solo RIR</option>
+                    </select>
+                </label>
+            )}
+
             {/* Header row */}
             <div
                 className="set-row"
@@ -128,14 +174,18 @@ export default function ExerciseCard({
 
             {sets.map((set, idx) => {
                 const isRestingThis = activeRestSetId === set.id;
+                const sameTypeIndex = sets
+                    .slice(0, idx + 1)
+                    .filter(candidate => Boolean(candidate.isWarmup) === Boolean(set.isWarmup))
+                    .length;
                 return (
                     <div
                         key={set.id}
-                        className="set-row"
+                        className={`set-row ${set.isWarmup ? "warmup-set-row" : ""}`}
                         style={{ gridTemplateColumns: gridTemplate }}
                     >
                         <div className={`set-number ${isRestingThis ? "resting" : ""}`}>
-                            {idx + 1}
+                            {set.isWarmup ? `R${sameTypeIndex}` : sameTypeIndex}
                         </div>
 
                         {params.map((p) => (
@@ -143,6 +193,9 @@ export default function ExerciseCard({
                                 <input
                                     type="number"
                                     inputMode={getParamInputMode(p)}
+                                    min="0"
+                                    max={p === "rir" ? "10" : undefined}
+                                    step={p === "weight" || p === "rir" ? "0.5" : "1"}
                                     className="input input-number"
                                     value={set[p] ?? ""}
                                     onChange={(e) =>
@@ -154,6 +207,15 @@ export default function ExerciseCard({
                                             e.target.value,
                                         )
                                     }
+                                    onBlur={(event) => {
+                                        if (p !== 'rir' || event.target.value === '') return
+                                        const value = Number(event.target.value)
+                                        if (!Number.isFinite(value)) return
+                                        const clamped = Math.max(0, Math.min(10, value))
+                                        if (clamped !== value) {
+                                            onUpdateSet(workoutId, exercise.id, set.id, p, String(clamped))
+                                        }
+                                    }}
                                     placeholder="—"
                                 />
                             </div>
@@ -169,7 +231,12 @@ export default function ExerciseCard({
                                         }
                                         onToggleSet(workoutId, exercise.id, set.id);
                                         if (!set.completed) {
-                                            onStartRest(exercise.name, idx + 1, set.id, targetRest);
+                                            onStartRest(
+                                                exercise.name,
+                                                set.isWarmup ? `R${sameTypeIndex}` : sameTypeIndex,
+                                                set.id,
+                                                targetRest,
+                                            );
                                         }
                                     }}
                                 >
@@ -180,7 +247,7 @@ export default function ExerciseCard({
                                     <button
                                         type="button"
                                         className="set-remove-btn"
-                                        aria-label={`Elimina serie ${idx + 1}`}
+                                        aria-label={`Elimina ${set.isWarmup ? 'riscaldamento' : 'serie'} ${sameTypeIndex}`}
                                         onClick={() => {
                                             if (isRestingThis && onCancelRest) {
                                                 onCancelRest(set.id);
@@ -200,12 +267,28 @@ export default function ExerciseCard({
                 );
             })}
 
-            <button
-                className="exercise-add-set-btn"
-                onClick={() => onAddSet(workoutId, exercise.id)}
-            >
-                + Aggiungi Serie
-            </button>
+            <div className="exercise-set-actions">
+                {onAddWarmupSet && (
+                    <button
+                        className="exercise-add-set-btn warmup"
+                        onClick={() => onAddWarmupSet(workoutId, exercise.id)}
+                    >
+                        + Riscaldamento
+                    </button>
+                )}
+                <button
+                    className="exercise-add-set-btn"
+                    onClick={() => onAddSet(workoutId, exercise.id)}
+                >
+                    + Serie
+                </button>
+            </div>
+
+            <ExerciseSetupPanel
+                exercise={exercise}
+                setup={setup}
+                onSave={onSaveSetup}
+            />
 
             <div style={{ marginTop: 6 }}>
                 <input

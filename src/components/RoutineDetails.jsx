@@ -5,8 +5,14 @@ export default function RoutineDetails({ routine, showRest = true, actions = nul
                 <div key={`${exercise.exerciseId || exercise.id || exercise.name}-${index}`} className="routine-detail-item">
                     <span className="routine-detail-name">{exercise.name}</span>
                     <span className="routine-detail-sets">
-                        {exercise.setsCount} serie
-                        {showRest && exercise.targetRest && exercise.targetRest !== 90 && (
+                        {exercise.isEmom || exercise.params?.includes('emom')
+                            ? 'EMOM'
+                            : `${exercise.warmupSetsCount ? `${exercise.warmupSetsCount} risc. + ` : ''}${exercise.setsCount || 3} serie`
+                        }
+                        {exercise.params?.includes('rir') && (
+                            <span style={{ marginLeft: 6, opacity: 0.7 }}>· RIR</span>
+                        )}
+                        {showRest && exercise.targetRest !== undefined && exercise.targetRest !== 90 && (
                             <span style={{ marginLeft: 6, opacity: 0.7 }}>
                                 · ⏱ {Math.floor(exercise.targetRest / 60)}:{(exercise.targetRest % 60).toString().padStart(2, '0')}
                             </span>

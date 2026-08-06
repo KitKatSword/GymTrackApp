@@ -9,14 +9,19 @@ function generateId() {
 function loadRoutines() {
     try {
         const data = localStorage.getItem(STORAGE_KEY)
-        return data ? JSON.parse(data) : []
+        const parsed = data ? JSON.parse(data) : []
+        return Array.isArray(parsed) ? parsed : []
     } catch {
         return []
     }
 }
 
 function saveRoutines(routines) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(routines))
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(routines))
+    } catch (error) {
+        console.error('Impossibile salvare le routine', error)
+    }
 }
 
 function normalizeEmomBlocks(blocks) {
@@ -33,10 +38,16 @@ function normalizeEmomBlocks(blocks) {
 function mapExerciseToRoutine(ex) {
     const params = ex.params || ['weight', 'reps']
     const isEmom = ex.isEmom || params.includes('emom')
-    const setsCount = Math.max(1, ex.setsCount || (Array.isArray(ex.sets) ? ex.sets.length : 0) || 3)
+    const exerciseSets = Array.isArray(ex.sets) ? ex.sets : []
+    const workingSetsCount = exerciseSets.filter(set => !set.isWarmup).length
+    const derivedWarmupCount = exerciseSets.filter(set => set.isWarmup).length
+    const setsCount = Math.max(1, Number(ex.setsCount) || workingSetsCount || 3)
+    const warmupSetsCount = isEmom
+        ? 0
+        : Math.max(0, Number(ex.warmupSetsCount) || derivedWarmupCount || 0)
 
     return {
-        exerciseId: ex.exerciseId || ex.id,
+        exerciseId: ex.exerciseId || ex.sourceExerciseId || ex.id,
         name: ex.name,
         category: ex.category,
         emoji: ex.emoji || '',
@@ -47,7 +58,8 @@ function mapExerciseToRoutine(ex) {
         emomBlocks: isEmom ? normalizeEmomBlocks(ex.emomBlocks) : undefined,
         emomWeight: isEmom ? (ex.emomWeight || '') : undefined,
         setsCount,
-        targetRest: ex.targetRest || 90,
+        warmupSetsCount,
+        targetRest: ex.targetRest ?? 90,
     }
 }
 
@@ -76,7 +88,13 @@ export default function useRoutines() {
 
     const updateRoutine = useCallback((routineId, updates) => {
         setRoutines(prev => prev.map(r =>
-            r.id === routineId ? { ...r, ...updates } : r
+            r.id === routineId
+                ? {
+                    ...r,
+                    ...updates,
+                    ...(updates.exercises && { exercises: updates.exercises.map(mapExerciseToRoutine) }),
+                }
+                : r
         ))
     }, [])
 

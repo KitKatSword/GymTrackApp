@@ -14,22 +14,27 @@ function generateId() {
 function loadWorkouts() {
     try {
         const data = localStorage.getItem(STORAGE_KEY)
-        return data ? JSON.parse(data) : []
+        const parsed = data ? JSON.parse(data) : []
+        return Array.isArray(parsed) ? parsed : []
     } catch {
         return []
     }
 }
 
 function saveWorkouts(workouts) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(workouts))
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(workouts))
+    } catch (error) {
+        console.error('Impossibile salvare gli allenamenti', error)
+    }
 }
 
 function getExerciseParams(exercise) {
     return exercise?.params?.length ? exercise.params : DEFAULT_PARAMS
 }
 
-function createEmptySet(params) {
-    const set = { id: generateId(), completed: false }
+function createEmptySet(params, isWarmup = false) {
+    const set = { id: generateId(), completed: false, ...(isWarmup && { isWarmup: true }) }
     params.forEach(param => {
         set[param] = ''
     })
@@ -40,21 +45,50 @@ function hasTrackedValue(value) {
     return value !== undefined && value !== null && value !== ''
 }
 
-function findLastSetsForExercise(workouts, exerciseName, params) {
-    const trackedParams = params?.length ? params : DEFAULT_PARAMS
+function getSourceExerciseId(exercise) {
+    return exercise?.sourceExerciseId || exercise?.exerciseId || exercise?.id || null
+}
 
-    for (const w of workouts) {
-        if (!w.endTime) continue
-        const match = w.exercises.find(e => e.name === exerciseName && !e.isEmom && !(e.params || []).includes('emom'))
+function getWorkoutSortValue(workout) {
+    if (workout?.endTimestamp !== null && workout?.endTimestamp !== undefined
+        && Number.isFinite(Number(workout.endTimestamp))) return Number(workout.endTimestamp)
+    const fallback = Date.parse(`${workout?.date || ''}T${workout?.startTime || '00:00'}:00`)
+    if (Number.isFinite(fallback)) return fallback
+    return workout?.startTimestamp !== null && workout?.startTimestamp !== undefined
+        && Number.isFinite(Number(workout.startTimestamp)) ? Number(workout.startTimestamp) : 0
+}
+
+function isSameExercise(candidate, exercise) {
+    const candidateSourceId = getSourceExerciseId(candidate)
+    const sourceId = getSourceExerciseId(exercise)
+    if (candidateSourceId && sourceId && candidateSourceId === sourceId) return true
+    return candidate?.name === exercise?.name
+}
+
+function findLastSetsForExercise(workouts, exercise, params, isWarmup = false) {
+    const trackedParams = params?.length ? params : DEFAULT_PARAMS
+    const completedWorkouts = [...workouts]
+        .filter(workout => workout?.endTime)
+        .sort((a, b) => getWorkoutSortValue(b) - getWorkoutSortValue(a))
+
+    for (const w of completedWorkouts) {
+        const match = (w.exercises || []).find(e =>
+            isSameExercise(e, exercise) && !e.isEmom && !(e.params || []).includes('emom')
+        )
         if (match && Array.isArray(match.sets) && match.sets.length > 0) {
             const meaningfulSets = match.sets.filter(set =>
-                set?.completed || trackedParams.some(param => hasTrackedValue(set?.[param]))
+                Boolean(set?.isWarmup) === isWarmup
+                && (set?.completed || trackedParams.some(param => hasTrackedValue(set?.[param])))
             )
 
             if (meaningfulSets.length === 0) continue
 
             return meaningfulSets.map(set => {
-                const prefilled = { id: generateId(), completed: false }
+                const prefilled = {
+                    id: generateId(),
+                    completed: false,
+                    ...(isWarmup && { isWarmup: true }),
+                }
                 trackedParams.forEach(param => {
                     prefilled[param] = hasTrackedValue(set?.[param]) ? set[param] : ''
                 })
@@ -66,14 +100,24 @@ function findLastSetsForExercise(workouts, exerciseName, params) {
     return null
 }
 
-function buildTrackedSets(params, preferredCount, previousSets) {
-    const totalSets = Math.max(1, preferredCount || previousSets?.length || 0)
-    return Array.from({ length: totalSets }, (_, index) => previousSets?.[index] || createEmptySet(params))
+function buildTrackedSets(params, preferredCount, previousSets, isWarmup = false) {
+    const fallbackCount = previousSets?.length || 0
+    const requestedCount = preferredCount === undefined || preferredCount === null
+        ? fallbackCount
+        : Number(preferredCount)
+    const totalSets = isWarmup
+        ? Math.max(0, Number.isFinite(requestedCount) ? requestedCount : 0)
+        : Math.max(1, Number.isFinite(requestedCount) ? requestedCount : 1)
+    return Array.from(
+        { length: totalSets },
+        (_, index) => previousSets?.[index] || createEmptySet(params, isWarmup),
+    )
 }
 
 function createEmomExercise(exercise) {
     return {
         id: generateId(),
+        sourceExerciseId: getSourceExerciseId(exercise),
         name: exercise.name,
         emoji: exercise.emoji || '',
         category: exercise.category,
@@ -93,18 +137,26 @@ function createEmomExercise(exercise) {
 
 function createTrackedExercise(exercise, workouts, preferredSetCount) {
     const params = getExerciseParams(exercise)
-    const previousSets = findLastSetsForExercise(workouts, exercise.name, params)
+    const previousSets = findLastSetsForExercise(workouts, exercise, params)
+    const previousWarmupSets = findLastSetsForExercise(workouts, exercise, params, true)
+    const preferredWarmupCount = exercise.warmupSetsCount === undefined
+        ? previousWarmupSets?.length
+        : exercise.warmupSetsCount
 
     return {
         id: generateId(),
+        sourceExerciseId: getSourceExerciseId(exercise),
         name: exercise.name,
         emoji: exercise.emoji || '',
         category: exercise.category,
         params,
         isCustom: exercise.isCustom || false,
         image: exercise.image || null,
-        targetRest: exercise.targetRest || DEFAULT_TARGET_REST,
-        sets: buildTrackedSets(params, preferredSetCount, previousSets),
+        targetRest: exercise.targetRest ?? DEFAULT_TARGET_REST,
+        sets: [
+            ...buildTrackedSets(params, preferredWarmupCount, previousWarmupSets, true),
+            ...buildTrackedSets(params, preferredSetCount, previousSets),
+        ],
     }
 }
 
@@ -134,6 +186,7 @@ export default function useWorkouts() {
             startTime: now.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
             startTimestamp: now.getTime(),
             endTime: null,
+            isPastLog: false,
             exercises: [],
         }
         setWorkouts(prev => [workout, ...prev])
@@ -149,6 +202,8 @@ export default function useWorkouts() {
             startTime: now.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
             startTimestamp: now.getTime(),
             endTime: null,
+            isPastLog: false,
+            routineId: routine.id,
             routineName: routine.name,
             routineColor: routine.color || DEFAULT_ROUTINE_COLOR,
             exercises,
@@ -156,38 +211,6 @@ export default function useWorkouts() {
         setWorkouts(prev => [workout, ...prev])
         return workout
     }, [workouts])
-
-    // Log a completed Fixfit follow-along video as a workout entry
-    const logVideoWorkout = useCallback((video) => {
-        const now = new Date()
-        const timeStr = now.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
-        const workout = {
-            id: generateId(),
-            date: toLocalDateString(now),
-            startTime: timeStr,
-            startTimestamp: now.getTime(),
-            endTime: timeStr,
-            isVideoWorkout: true,
-            exercises: [{
-                id: generateId(),
-                name: video.title,
-                emoji: '📺',
-                category: video.cat || 'Video',
-                params: ['duration'],
-                isVideo: true,
-                videoYt: video.yt,
-                videoDuration: video.dur || '',
-                videoKcal: video.kcal || 0,
-                sets: [{
-                    id: generateId(),
-                    completed: true,
-                    duration: video.dur || '',
-                }],
-            }],
-        }
-        setWorkouts(prev => [workout, ...prev])
-        return workout
-    }, [])
 
     const finishWorkout = useCallback((workoutId, startTimeOverride, endTimeOverride, autoCompleteAll = false, newRoutineName = null) => {
         setWorkouts(prev => prev.map(w => {
@@ -206,12 +229,25 @@ export default function useWorkouts() {
                 });
             }
 
+            const startTime = startTimeOverride || w.startTime
+            const endTime = endTimeOverride || new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
+            let startTimestamp = w.startTimestamp
+            let endTimestamp = Date.now()
+            if (startTimeOverride || endTimeOverride || w.isPastLog) {
+                startTimestamp = new Date(`${w.date}T${startTime}:00`).getTime()
+                endTimestamp = new Date(`${w.date}T${endTime}:00`).getTime()
+                if (endTimestamp < startTimestamp) endTimestamp += 24 * 60 * 60 * 1000
+            }
+
             return {
                 ...w,
-                startTime: startTimeOverride || w.startTime,
-                endTime: endTimeOverride || new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
+                startTime,
+                startTimestamp,
+                endTime,
+                endTimestamp,
                 ...(newRoutineName && { routineName: newRoutineName }),
                 isPaused: false,
+                isPastLog: false,
                 pausedAt: null,
                 exercises: updatedExercises
                     .map(ex => ex.isEmom
@@ -235,7 +271,7 @@ export default function useWorkouts() {
         const params = getExerciseParams(exercise)
         const preferredSetCount = params.includes('emom')
             ? undefined
-            : findLastSetsForExercise(workouts, exercise.name, params)?.length || 1
+            : findLastSetsForExercise(workouts, exercise, params)?.length || 1
         const newExercise = createExerciseFromTemplate(exercise, workouts, preferredSetCount)
 
         setWorkouts(prev => prev.map(w =>
@@ -261,10 +297,28 @@ export default function useWorkouts() {
                 exercises: w.exercises.map(e => {
                     if (e.id !== exerciseId) return e
                     const params = e.params || ['weight', 'reps']
-                    const newSet = { id: generateId(), completed: false }
-                    params.forEach(p => { newSet[p] = '' })
+                    const newSet = createEmptySet(params)
                     return { ...e, sets: [...e.sets, newSet] }
                 })
+            }
+        }))
+    }, [])
+
+    const addWarmupSet = useCallback((workoutId, exerciseId) => {
+        setWorkouts(prev => prev.map(w => {
+            if (w.id !== workoutId) return w
+            return {
+                ...w,
+                exercises: w.exercises.map(e => {
+                    if (e.id !== exerciseId) return e
+                    const params = e.params || DEFAULT_PARAMS
+                    const sets = Array.isArray(e.sets) ? e.sets : []
+                    const firstWorkingSet = sets.findIndex(set => !set.isWarmup)
+                    const insertAt = firstWorkingSet === -1 ? sets.length : firstWorkingSet
+                    const nextSets = [...sets]
+                    nextSets.splice(insertAt, 0, createEmptySet(params, true))
+                    return { ...e, sets: nextSets }
+                }),
             }
         }))
     }, [])
@@ -303,6 +357,33 @@ export default function useWorkouts() {
         ))
     }, [])
 
+    const updateExerciseParams = useCallback((workoutId, exerciseId, params) => {
+        const normalizedParams = [...new Set(params)].filter(param => param !== 'emom')
+        if (normalizedParams.length === 0) return
+
+        setWorkouts(prev => prev.map(w =>
+            w.id === workoutId
+                ? {
+                    ...w,
+                    exercises: w.exercises.map(e => {
+                        if (e.id !== exerciseId || e.isEmom) return e
+                        return {
+                            ...e,
+                            params: normalizedParams,
+                            sets: (e.sets || []).map(set => {
+                                const nextSet = { ...set }
+                                normalizedParams.forEach(param => {
+                                    if (!hasTrackedValue(nextSet[param])) nextSet[param] = ''
+                                })
+                                return nextSet
+                            }),
+                        }
+                    }),
+                }
+                : w
+        ))
+    }, [])
+
     const toggleSetComplete = useCallback((workoutId, exerciseId, setId) => {
         setWorkouts(prev => prev.map(w =>
             w.id === workoutId
@@ -333,7 +414,9 @@ export default function useWorkouts() {
             startTime: now.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
             startTimestamp: now.getTime(),
             endTime: null,
+            endTimestamp: null,
             isPaused: false,
+            isPastLog: false,
             pausedAt: null,
             pausedAcc: 0,
             exercises: original.exercises.map(e => ({
@@ -414,6 +497,7 @@ export default function useWorkouts() {
             startTime: '09:00',
             startTimestamp: new Date(dateStr + 'T09:00:00').getTime(),
             endTime: null,
+            isPastLog: true,
             exercises: [],
         }
         setWorkouts(prev => [workout, ...prev])
@@ -424,22 +508,33 @@ export default function useWorkouts() {
         const exercises = routine.exercises.map(rex => createExerciseFromTemplate(rex, workouts, rex.setsCount || 3))
         setWorkouts(prev => prev.map(w =>
             w.id === workoutId
-                ? { ...w, exercises: [...w.exercises, ...exercises], routineName: routine.name, routineColor: routine.color || '#8b5cf6' }
+                ? {
+                    ...w,
+                    exercises: [...w.exercises, ...exercises],
+                    routineId: routine.id,
+                    routineName: routine.name,
+                    routineColor: routine.color || DEFAULT_ROUTINE_COLOR,
+                }
                 : w
         ))
     }, [workouts])
 
-    const getTodayWorkout = useCallback(() => {
-        const today = toLocalDateString()
-        return workouts.find(w => w.date === today && !w.endTime)
+    const getPendingWorkout = useCallback(() => {
+        return [...workouts]
+            .filter(workout => !workout.endTime)
+            .sort((a, b) => getWorkoutSortValue(b) - getWorkoutSortValue(a))[0] || null
     }, [workouts])
 
     const getStats = useCallback(() => {
         const today = toLocalDateString()
         const weekStr = getStartOfWeekDateString()
 
-        const thisWeek = workouts.filter(w => w.date >= weekStr)
-        const totalSets = workouts.reduce((sum, workout) => sum + getWorkoutCompletedSetCount(workout), 0)
+        const completedWorkouts = workouts.filter(w => w.endTime)
+        const thisWeek = completedWorkouts.filter(w => w.date >= weekStr && w.date <= today)
+        const totalSets = completedWorkouts.reduce(
+            (sum, workout) => sum + getWorkoutCompletedSetCount(workout, { includeWarmups: false }),
+            0,
+        )
 
         // Streak calculation
         let streak = 0
@@ -473,14 +568,15 @@ export default function useWorkouts() {
         workouts,
         createWorkout,
         createWorkoutFromRoutine,
-        logVideoWorkout,
         finishWorkout,
         deleteWorkout,
         addExercise,
         removeExercise,
         addSet,
+        addWarmupSet,
         removeSet,
         updateSet,
+        updateExerciseParams,
         toggleSetComplete,
         duplicateWorkout,
         updateWorkoutNotes,
@@ -491,7 +587,7 @@ export default function useWorkouts() {
         updateEmomExercise,
         createWorkoutOnDate,
         loadRoutineIntoWorkout,
-        getTodayWorkout,
+        getPendingWorkout,
         getStats,
     }
 }

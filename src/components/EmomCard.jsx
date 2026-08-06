@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import ExerciseSetupPanel from "./ExerciseSetupPanel";
 
 /**
  * EmomCard - Componente per esercizi EMOM (Every Minute On the Minute)
@@ -59,6 +60,8 @@ export default function EmomCard({
     onUpdateNotes,
     onEmomPause,
     isPastLog = false,
+    setup = null,
+    onSaveSetup,
 }) {
     const [localNotes, setLocalNotes] = useState(exercise.notes || "");
     const [blocks, setBlocks] = useState(exercise.emomBlocks || [{ minutes: 10, reps: 5 }]);
@@ -151,6 +154,13 @@ export default function EmomCard({
         }
     };
 
+    useEffect(() => {
+        return () => {
+            try { audioCtx.current?.close?.(); } catch { }
+            audioCtx.current = null;
+        };
+    }, []);
+
     // Tick timer (just forces re-render, state is derived from timestamps)
     useEffect(() => {
         if (!isRunning || isPaused) {
@@ -219,6 +229,10 @@ export default function EmomCard({
 
     const handleStart = () => {
         const now = Date.now();
+        try {
+            if (!audioCtx.current) audioCtx.current = new (window.AudioContext || window.webkitAudioContext)();
+            audioCtx.current.resume?.().catch?.(() => { });
+        } catch { }
         setIsFinished(false);
         syncToParent({
             emomBlocks: blocks,
@@ -228,6 +242,7 @@ export default function EmomCard({
             emomPausedAt: null,
             emomPausedAcc: 0,
         });
+        if (onEmomPause) onEmomPause(false);
     };
 
     const handlePause = () => {
@@ -479,6 +494,12 @@ export default function EmomCard({
             )}
 
             {/* Notes */}
+            <ExerciseSetupPanel
+                exercise={exercise}
+                setup={setup}
+                onSave={onSaveSetup}
+            />
+
             <div style={{ marginTop: 6 }}>
                 <input
                     type="text"

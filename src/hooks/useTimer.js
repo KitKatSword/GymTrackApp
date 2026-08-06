@@ -10,10 +10,21 @@ export default function useTimer() {
 
     const intervalRef = useRef(null);
     const endTimeRef = useRef(null); // Timestamp of when the timer should end
+    const audioContextRef = useRef(null);
+
+    const unlockSound = useCallback(() => {
+        try {
+            if (!audioContextRef.current) {
+                audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            audioContextRef.current.resume?.().catch?.(() => { });
+        } catch { }
+    }, []);
 
     const playSound = useCallback(() => {
         try {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const ctx = audioContextRef.current || new (window.AudioContext || window.webkitAudioContext)();
+            audioContextRef.current = ctx;
             const playTone = (freq, t, dur) => {
                 const o = ctx.createOscillator();
                 const g = ctx.createGain();
@@ -31,6 +42,14 @@ export default function useTimer() {
             playTone(1100, t + 0.13, 0.12);
             playTone(1320, t + 0.26, 0.22);
         } catch { }
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            clearInterval(intervalRef.current);
+            try { audioContextRef.current?.close?.(); } catch { }
+            audioContextRef.current = null;
+        };
     }, []);
 
     const vibrate = useCallback(() => {
@@ -85,6 +104,7 @@ export default function useTimer() {
     }, [isRunning, triggerCompletion]);
 
     const start = useCallback((seconds, timerLabel = "") => {
+        unlockSound();
         clearInterval(intervalRef.current);
         setDuration(seconds);
         setRemaining(seconds);
@@ -93,7 +113,7 @@ export default function useTimer() {
         setIsActive(true);
         setLabel(timerLabel);
         endTimeRef.current = Date.now() + seconds * 1000;
-    }, []);
+    }, [unlockSound]);
 
     const pause = useCallback(() => {
         setIsRunning(false);

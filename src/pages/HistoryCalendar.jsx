@@ -59,6 +59,11 @@ export default function HistoryCalendar({ workouts, onDuplicate, onDelete, onUpd
     const calendarDays = useMemo(() => buildHistoryCalendarDays(year, month), [year, month])
     const selectedWorkouts = selectedDate ? (workoutsByDate[selectedDate] || []) : []
     const canAddWorkoutForSelectedDate = selectedDate && selectedDate <= today
+    const changeMonth = (offset) => {
+        setViewDate(new Date(year, month + offset, 1))
+        setSelectedDate(null)
+        setColorPickerDay(null)
+    }
 
     return (
         <div className="page">
@@ -69,7 +74,7 @@ export default function HistoryCalendar({ workouts, onDuplicate, onDelete, onUpd
             <div className="month-nav">
                 <button
                     className="month-nav-btn"
-                    onClick={() => setViewDate(new Date(year, month - 1, 1))}
+                    onClick={() => changeMonth(-1)}
                 >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                         <polyline points="15 18 9 12 15 6" />
@@ -80,7 +85,7 @@ export default function HistoryCalendar({ workouts, onDuplicate, onDelete, onUpd
                 </div>
                 <button
                     className="month-nav-btn"
-                    onClick={() => setViewDate(new Date(year, month + 1, 1))}
+                    onClick={() => changeMonth(1)}
                 >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                         <polyline points="9 18 15 12 9 6" />

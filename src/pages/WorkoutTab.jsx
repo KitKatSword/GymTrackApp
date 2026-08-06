@@ -1,12 +1,9 @@
 import { useState } from 'react'
 import ExerciseSearch from '../components/ExerciseSearch'
-import VideoPlayer from '../components/VideoPlayer'
-import CompletedVideosCarousel from '../components/CompletedVideosCarousel'
 import RoutineBuilderForm from '../components/RoutineBuilderForm'
 import RoutineCard from '../components/RoutineCard'
 import RoutineDetails from '../components/RoutineDetails'
 import { ROUTINE_COLORS } from '../constants/colors'
-import { loadCompletedVideos } from '../utils/videos'
 
 export default function WorkoutTab({
     routines,
@@ -17,7 +14,6 @@ export default function WorkoutTab({
     onUpdateRoutine,
     onStartFromRoutine,
     onStartEmpty,
-    onLogVideo
 }) {
     const [showCreate, setShowCreate] = useState(false)
     const [editingRoutineId, setEditingRoutineId] = useState(null)
@@ -27,8 +23,6 @@ export default function WorkoutTab({
     const [showExercisePicker, setShowExercisePicker] = useState(false)
     const [deleteConfirm, setDeleteConfirm] = useState(null)
     const [expandedId, setExpandedId] = useState(null)
-    const [completedVideos] = useState(loadCompletedVideos)
-    const [selectedVideo, setSelectedVideo] = useState(null)
     const [showAllRoutines, setShowAllRoutines] = useState(false)
 
     const resetForm = () => {
@@ -50,7 +44,7 @@ export default function WorkoutTab({
     }
 
     const handleAddExercise = (exercise) => {
-        setSelectedExercises(prev => [...prev, { ...exercise, setsCount: 3 }])
+        setSelectedExercises(prev => [...prev, { ...exercise, setsCount: 3, warmupSetsCount: 0 }])
     }
 
     const handleRemoveExercise = (idx) => {
@@ -61,6 +55,24 @@ export default function WorkoutTab({
         setSelectedExercises(prev => prev.map((ex, i) =>
             i === idx ? { ...ex, setsCount: Math.max(1, Math.min(10, count)) } : ex
         ))
+    }
+
+    const handleWarmupCount = (idx, count) => {
+        setSelectedExercises(prev => prev.map((ex, i) =>
+            i === idx ? { ...ex, warmupSetsCount: Math.max(0, Math.min(5, count)) } : ex
+        ))
+    }
+
+    const handleTrackingMode = (idx, mode) => {
+        setSelectedExercises(prev => prev.map((exercise, index) => {
+            if (index !== idx) return exercise
+            const baseParams = (exercise.params || ['weight', 'reps'])
+                .filter(param => param !== 'reps' && param !== 'rir')
+            const trackingParams = mode === 'none' ? [] : mode === 'rir'
+                ? ['rir']
+                : mode === 'reps-rir' ? ['reps', 'rir'] : ['reps']
+            return { ...exercise, params: [...baseParams, ...trackingParams] }
+        }))
     }
 
     const handleSave = () => {
@@ -122,6 +134,8 @@ export default function WorkoutTab({
                     onRoutineColorChange={setRoutineColor}
                     selectedExercises={selectedExercises}
                     onSetCountChange={handleSetCount}
+                    onWarmupCountChange={handleWarmupCount}
+                    onTrackingModeChange={handleTrackingMode}
                     onRemoveExercise={handleRemoveExercise}
                     onOpenExercisePicker={() => setShowExercisePicker(true)}
                     onSave={handleSave}
@@ -294,16 +308,6 @@ export default function WorkoutTab({
                 </div>
             )}
 
-            {/* Completed Videos Carousel inside Workout */}
-            {!showCreate && (
-                <CompletedVideosCarousel
-                    title="Video Completati di Recente"
-                    videos={completedVideos}
-                    onSelect={setSelectedVideo}
-                    style={{ marginTop: 'var(--space-6)', marginBottom: 'var(--space-5)' }}
-                />
-            )}
-
             {/* Delete confirm */}
             {deleteConfirm && (
                 <div className="modal-overlay" onClick={() => setDeleteConfirm(null)}>
@@ -319,15 +323,6 @@ export default function WorkoutTab({
                 </div>
             )}
 
-            {/* Video Player form from Completed Videos */}
-            {selectedVideo && (
-                <VideoPlayer
-                    video={selectedVideo}
-                    onClose={() => setSelectedVideo(null)}
-                    onComplete={(v) => { if (onLogVideo) onLogVideo(v) }}
-                    isCompleted={true}
-                />
-            )}
         </div>
     )
 }

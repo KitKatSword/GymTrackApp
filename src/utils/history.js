@@ -1,4 +1,4 @@
-import { getCompletedSetCount } from './workouts'
+import { getCompletedWarmupSetCount, getCompletedWorkingSetCount } from './workouts.js'
 
 export const HISTORY_DAY_SHORT = ['L', 'M', 'M', 'G', 'V', 'S', 'D']
 export const HISTORY_MONTHS = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
@@ -44,6 +44,7 @@ export function getCalendarDayColor(workoutsForDay = []) {
 
 export function getWorkoutHistoryBadge(workout) {
     let totalSets = 0
+    let totalWarmups = 0
     let totalEmom = 0
 
     ;(workout?.exercises || []).forEach(exercise => {
@@ -52,11 +53,13 @@ export function getWorkoutHistoryBadge(workout) {
             return
         }
 
-        totalSets += getCompletedSetCount(exercise)
+        totalSets += getCompletedWorkingSetCount(exercise)
+        totalWarmups += getCompletedWarmupSetCount(exercise)
     })
 
     if (workout?.isVideoWorkout) return '📺 Video'
-    if (totalSets === 0 && totalEmom > 0) return `${totalEmom} EMOM`
-    if (totalEmom > 0) return `${totalSets} serie + ${totalEmom} EMOM`
-    return `${totalSets} serie`
+    const warmupSuffix = totalWarmups > 0 ? ` + ${totalWarmups} risc.` : ''
+    if (totalSets === 0 && totalEmom > 0) return `${totalEmom} EMOM${warmupSuffix}`
+    if (totalEmom > 0) return `${totalSets} serie + ${totalEmom} EMOM${warmupSuffix}`
+    return `${totalSets} serie${warmupSuffix}`
 }

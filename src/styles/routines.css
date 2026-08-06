@@ -41,10 +41,31 @@
 
 .routine-exercise-item {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: var(--space-2);
     padding: 8px 0;
     border-bottom: 1px solid var(--border);
+}
+
+.routine-exercise-config {
+    display: grid;
+    gap: 5px;
+    min-width: 112px;
+}
+
+.routine-count-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+}
+
+.routine-tracking-select {
+    min-height: 30px;
+    padding: 3px 6px;
+    font-size: var(--text-xs);
 }
 
 .routine-exercise-item:last-child {

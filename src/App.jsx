@@ -2,13 +2,14 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import useWorkouts from './hooks/useWorkouts'
 import useTimer from './hooks/useTimer'
 import useRoutines from './hooks/useRoutines'
+import useMediaTracking from './hooks/useMediaTracking'
 import RestTimerBar from './components/RestTimerBar'
 import Home from './pages/Home'
 import ActiveWorkout from './pages/ActiveWorkout'
 import LogPastWorkout from './pages/LogPastWorkout'
 import HistoryCalendar from './pages/HistoryCalendar'
 import WorkoutTab from './pages/WorkoutTab'
-import VideoLibrary from './pages/VideoLibrary'
+import Progress from './pages/Progress'
 import { exportAllData, importAllData } from './data/exercises'
 import { syncRoutineRestTargetsFromWorkout } from './utils/workouts'
 
@@ -51,10 +52,10 @@ const NavIcons = {
             <line x1="3" y1="18" x2="3.01" y2="18" />
         </svg>
     ),
-    video: (
+    progress: (
         <svg className="nav-icon" viewBox="0 0 24 24">
-            <rect x="2" y="4" width="20" height="16" rx="2" ry="2" />
-            <polygon points="10 8 16 12 10 16 10 8" />
+            <polyline points="3 17 9 11 13 15 21 7" />
+            <polyline points="15 7 21 7 21 13" />
         </svg>
     ),
 }
@@ -62,7 +63,7 @@ const NavIcons = {
 const TABS = [
     { id: 'home', label: 'Home', icon: NavIcons.home },
     { id: 'workout', label: 'Allenamento', icon: NavIcons.workout },
-    { id: 'video', label: 'Libreria', icon: NavIcons.video },
+    { id: 'progress', label: 'Progressi', icon: NavIcons.progress },
     { id: 'history', label: 'Storico', icon: NavIcons.history },
 ]
 
@@ -81,7 +82,7 @@ export default function App() {
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', theme)
         document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'light' ? '#f5f5fa' : '#0a0a1a')
-        localStorage.setItem('gymtrack_theme', theme)
+        try { localStorage.setItem('gymtrack_theme', theme) } catch { }
     }, [theme])
 
 
@@ -92,16 +93,18 @@ export default function App() {
     const workoutActions = useWorkouts()
     const timer = useTimer()
     const routineActions = useRoutines()
+    const mediaActions = useMediaTracking()
 
     const {
-        workouts, createWorkout, createWorkoutFromRoutine, logVideoWorkout, finishWorkout, deleteWorkout,
-        addExercise, removeExercise, addSet, removeSet, updateSet,
-        toggleSetComplete, duplicateWorkout, getTodayWorkout, getStats,
+        workouts, createWorkout, createWorkoutFromRoutine, finishWorkout, deleteWorkout,
+        addExercise, removeExercise, addSet, addWarmupSet, removeSet, updateSet, updateExerciseParams,
+        toggleSetComplete, duplicateWorkout, getStats,
+        getPendingWorkout,
         updateExerciseRest, updateWorkoutColor, updateWorkoutTimerState, updateEmomExercise, createWorkoutOnDate, loadRoutineIntoWorkout,
     } = workoutActions
 
-    const activeWorkout = workouts.find(w => w.id === activeWorkoutId && !w.endTime) || null
-    const todayWorkout = getTodayWorkout()
+    const pendingWorkout = getPendingWorkout()
+    const activeWorkout = workouts.find(w => w.id === activeWorkoutId && !w.endTime) || pendingWorkout
     const stats = getStats()
 
     const clearActiveWorkout = useCallback(() => {
@@ -129,12 +132,13 @@ export default function App() {
         if (activeWorkout) {
             setActiveWorkoutId(activeWorkout.id)
             localStorage.setItem('gymtrack_active_workout', activeWorkout.id)
-        } else if (todayWorkout) {
-            setActiveWorkoutId(todayWorkout.id)
-            localStorage.setItem('gymtrack_active_workout', todayWorkout.id)
+        } else if (pendingWorkout) {
+            setActiveWorkoutId(pendingWorkout.id)
+            localStorage.setItem('gymtrack_active_workout', pendingWorkout.id)
         }
-        setActiveTab('active-workout')
-    }, [activeWorkout, todayWorkout])
+        const workoutToResume = activeWorkout || pendingWorkout
+        setActiveTab(workoutToResume?.isPastLog ? 'log-past' : 'active-workout')
+    }, [activeWorkout, pendingWorkout])
 
     const handleFinishWorkout = useCallback((id, newRoutineName = null) => {
         const finishedWorkout = workouts.find(w => w.id === id)
@@ -188,7 +192,7 @@ export default function App() {
             await importAllData(file)
             window.location.reload()
         } catch (err) {
-            alert('Errore importazione: file non valido')
+            alert(`Errore importazione: ${err?.message || 'file non valido'}`)
         }
         e.target.value = ''
     }, [])
@@ -200,7 +204,7 @@ export default function App() {
                 <Home
                     stats={stats}
                     workouts={workouts}
-                    activeWorkout={activeWorkout || todayWorkout}
+                    activeWorkout={activeWorkout}
                     onStartWorkout={handleStartWorkout}
                     onResumeWorkout={handleResumeWorkout}
                     onExport={handleExport}
@@ -220,23 +224,27 @@ export default function App() {
                     onAddExercise={addExercise}
                     onRemoveExercise={removeExercise}
                     onAddSet={addSet}
+                    onAddWarmupSet={addWarmupSet}
                     onRemoveSet={removeSet}
                     onUpdateSet={updateSet}
                     onToggleSet={toggleSetComplete}
                     onUpdateNotes={workoutActions.updateWorkoutNotes}
                     onUpdateExerciseNotes={workoutActions.updateExerciseNotes}
                     onUpdateExerciseRest={updateExerciseRest}
+                    onUpdateExerciseParams={updateExerciseParams}
                     onUpdateEmom={updateEmomExercise}
                     onUpdateTimerState={updateWorkoutTimerState}
                     onFinish={handleFinishWorkout}
                     onGoBack={() => setActiveTab('workout')}
                     onCreateRoutine={routineActions.createRoutine}
+                    getExerciseSetup={mediaActions.getExerciseSetup}
+                    onSaveExerciseSetup={mediaActions.saveExerciseSetup}
                 />
             )}
 
             {activeTab === 'workout' && (
                 <WorkoutTab
-                    hasActiveWorkout={!!activeWorkout || !!todayWorkout}
+                    hasActiveWorkout={!!activeWorkout}
                     onResumeWorkout={handleResumeWorkout}
                     routines={routineActions.routines}
                     onCreateRoutine={routineActions.createRoutine}
@@ -244,15 +252,15 @@ export default function App() {
                     onUpdateRoutine={routineActions.updateRoutine}
                     onStartFromRoutine={handleStartFromRoutine}
                     onStartEmpty={handleStartWorkout}
-                    onLogVideo={logVideoWorkout}
                 />
             )}
 
-            {activeTab === 'video' && (
-                <VideoLibrary
-                    hasActiveWorkout={!!activeWorkout || !!todayWorkout}
-                    onLogVideo={logVideoWorkout}
-                    onResumeWorkout={handleResumeWorkout}
+            {activeTab === 'progress' && (
+                <Progress
+                    workouts={workouts}
+                    photos={mediaActions.progressPhotos}
+                    onAddPhoto={mediaActions.addProgressPhoto}
+                    onDeletePhoto={mediaActions.deleteProgressPhoto}
                 />
             )}
 
@@ -263,7 +271,7 @@ export default function App() {
                     onDelete={deleteWorkout}
                     onUpdateWorkoutColor={updateWorkoutColor}
                     onStartWorkoutOnDate={handleStartWorkoutOnDate}
-                    hasActiveWorkout={!!activeWorkout || !!todayWorkout}
+                    hasActiveWorkout={!!activeWorkout}
                 />
             )}
 
@@ -274,17 +282,21 @@ export default function App() {
                     onAddExercise={addExercise}
                     onRemoveExercise={removeExercise}
                     onAddSet={addSet}
+                    onAddWarmupSet={addWarmupSet}
                     onRemoveSet={removeSet}
                     onUpdateSet={updateSet}
                     onToggleSet={toggleSetComplete}
                     onUpdateNotes={workoutActions.updateWorkoutNotes}
                     onUpdateExerciseNotes={workoutActions.updateExerciseNotes}
                     onUpdateExerciseRest={updateExerciseRest}
+                    onUpdateExerciseParams={updateExerciseParams}
                     onUpdateEmom={updateEmomExercise}
                     onFinish={handleFinishPastWorkout}
                     onGoBack={() => { clearActiveWorkout(); deleteWorkout(activeWorkout?.id); setActiveTab('history') }}
                     onCreateRoutine={routineActions.createRoutine}
                     onLoadRoutine={loadRoutineIntoWorkout}
+                    getExerciseSetup={mediaActions.getExerciseSetup}
+                    onSaveExerciseSetup={mediaActions.saveExerciseSetup}
                 />
             )}
 

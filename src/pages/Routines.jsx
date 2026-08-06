@@ -1,14 +1,11 @@
 import { useState } from 'react'
 import ExerciseSearch from '../components/ExerciseSearch'
-import VideoPlayer from '../components/VideoPlayer'
-import CompletedVideosCarousel from '../components/CompletedVideosCarousel'
 import RoutineBuilderForm from '../components/RoutineBuilderForm'
 import RoutineCard from '../components/RoutineCard'
 import RoutineDetails from '../components/RoutineDetails'
 import { ROUTINE_COLORS } from '../constants/colors'
-import { loadCompletedVideos } from '../utils/videos'
 
-export default function Routines({ routines, onCreateRoutine, onDeleteRoutine, onUpdateRoutine, onStartFromRoutine, onLogVideo }) {
+export default function Routines({ routines, onCreateRoutine, onDeleteRoutine, onUpdateRoutine, onStartFromRoutine }) {
     const [showCreate, setShowCreate] = useState(false)
     const [editingRoutineId, setEditingRoutineId] = useState(null)
     const [routineName, setRoutineName] = useState('')
@@ -17,8 +14,6 @@ export default function Routines({ routines, onCreateRoutine, onDeleteRoutine, o
     const [showExercisePicker, setShowExercisePicker] = useState(false)
     const [deleteConfirm, setDeleteConfirm] = useState(null)
     const [expandedId, setExpandedId] = useState(null)
-    const [completedVideos] = useState(loadCompletedVideos)
-    const [selectedVideo, setSelectedVideo] = useState(null)
 
     const resetForm = () => {
         setRoutineName('')
@@ -38,7 +33,7 @@ export default function Routines({ routines, onCreateRoutine, onDeleteRoutine, o
     }
 
     const handleAddExercise = (exercise) => {
-        setSelectedExercises(prev => [...prev, { ...exercise, setsCount: 3 }])
+        setSelectedExercises(prev => [...prev, { ...exercise, setsCount: 3, warmupSetsCount: 0 }])
     }
 
     const handleRemoveExercise = (idx) => {
@@ -49,6 +44,21 @@ export default function Routines({ routines, onCreateRoutine, onDeleteRoutine, o
         setSelectedExercises(prev => prev.map((ex, i) =>
             i === idx ? { ...ex, setsCount: Math.max(1, Math.min(10, count)) } : ex
         ))
+    }
+
+    const handleWarmupCount = (idx, count) => {
+        setSelectedExercises(prev => prev.map((ex, i) =>
+            i === idx ? { ...ex, warmupSetsCount: Math.max(0, Math.min(5, count)) } : ex
+        ))
+    }
+
+    const handleTrackingMode = (idx, mode) => {
+        setSelectedExercises(prev => prev.map((exercise, index) => {
+            if (index !== idx) return exercise
+            const baseParams = (exercise.params || ['weight', 'reps']).filter(param => param !== 'reps' && param !== 'rir')
+            const trackingParams = mode === 'none' ? [] : mode === 'rir' ? ['rir'] : mode === 'reps-rir' ? ['reps', 'rir'] : ['reps']
+            return { ...exercise, params: [...baseParams, ...trackingParams] }
+        }))
     }
 
     const handleSave = () => {
@@ -97,6 +107,8 @@ export default function Routines({ routines, onCreateRoutine, onDeleteRoutine, o
                     onRoutineColorChange={setRoutineColor}
                     selectedExercises={selectedExercises}
                     onSetCountChange={handleSetCount}
+                    onWarmupCountChange={handleWarmupCount}
+                    onTrackingModeChange={handleTrackingMode}
                     onRemoveExercise={handleRemoveExercise}
                     onOpenExercisePicker={() => setShowExercisePicker(true)}
                     onSave={handleSave}
@@ -109,16 +121,6 @@ export default function Routines({ routines, onCreateRoutine, onDeleteRoutine, o
                 <ExerciseSearch
                     onSelect={(ex) => { handleAddExercise(ex); setShowExercisePicker(false) }}
                     onClose={() => setShowExercisePicker(false)}
-                />
-            )}
-
-            {/* Completed Videos Carousel */}
-            {!showCreate && (
-                <CompletedVideosCarousel
-                    title="Video Completati"
-                    videos={completedVideos}
-                    onSelect={setSelectedVideo}
-                    style={{ marginTop: 0, marginBottom: 'var(--space-5)' }}
                 />
             )}
 
@@ -200,15 +202,6 @@ export default function Routines({ routines, onCreateRoutine, onDeleteRoutine, o
                 </div>
             )}
 
-            {/* Video Player form from Completed Videos */}
-            {selectedVideo && (
-                <VideoPlayer
-                    video={selectedVideo}
-                    onClose={() => setSelectedVideo(null)}
-                    onComplete={(v) => { if (onLogVideo) onLogVideo(v) }}
-                    isCompleted={true}
-                />
-            )}
         </div>
     )
 }
