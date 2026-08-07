@@ -1,5 +1,6 @@
 import { ROUTINE_COLORS } from '../constants/colors'
 import { getInitials } from '../utils/text'
+import { PARAM_TYPES } from '../data/exercises'
 
 export default function RoutineBuilderForm({
     title,
@@ -10,7 +11,6 @@ export default function RoutineBuilderForm({
     selectedExercises,
     onSetCountChange,
     onWarmupCountChange,
-    onTrackingModeChange,
     onRemoveExercise,
     onOpenExercisePicker,
     onSave,
@@ -59,9 +59,10 @@ export default function RoutineBuilderForm({
                     {selectedExercises.map((exercise, index) => {
                         const params = exercise.params || ['weight', 'reps']
                         const isEmom = exercise.isEmom || params.includes('emom')
-                        const trackingMode = params.includes('rir')
-                            ? (params.includes('reps') ? 'reps-rir' : 'rir')
-                            : (params.includes('reps') ? 'reps' : 'none')
+                        const paramLabels = params
+                            .map(param => PARAM_TYPES.find(type => type.id === param)?.label)
+                            .filter(Boolean)
+                            .join(' · ')
 
                         return (
                         <div key={`${exercise.exerciseId || exercise.id || exercise.name}-${index}`} className="routine-exercise-item">
@@ -73,6 +74,7 @@ export default function RoutineBuilderForm({
                             <div style={{ flex: 1, minWidth: 0 }}>
                                 <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{exercise.name}</div>
                                 <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{exercise.category}</div>
+                                <div className="routine-exercise-params">{paramLabels}</div>
                             </div>
                             {!isEmom && (
                                 <div className="routine-exercise-config">
@@ -92,20 +94,6 @@ export default function RoutineBuilderForm({
                                             <button className="routine-sets-btn" onClick={() => onWarmupCountChange(index, (exercise.warmupSetsCount || 0) + 1)}>+</button>
                                         </div>
                                     </div>
-                                    {params.some(param => ['weight', 'reps', 'rir'].includes(param)) && (
-                                        <select
-                                            className="input routine-tracking-select"
-                                            value={trackingMode}
-                                            onChange={(event) => onTrackingModeChange(index, event.target.value)}
-                                        >
-                                            {params.some(param => param !== 'reps' && param !== 'rir') && (
-                                                <option value="none">Senza reps/RIR</option>
-                                            )}
-                                            <option value="reps">Reps</option>
-                                            <option value="reps-rir">Reps + RIR</option>
-                                            <option value="rir">RIR</option>
-                                        </select>
-                                    )}
                                 </div>
                             )}
                             <button className="exercise-delete-btn" onClick={() => onRemoveExercise(index)}>✕</button>

@@ -357,33 +357,6 @@ export default function useWorkouts() {
         ))
     }, [])
 
-    const updateExerciseParams = useCallback((workoutId, exerciseId, params) => {
-        const normalizedParams = [...new Set(params)].filter(param => param !== 'emom')
-        if (normalizedParams.length === 0) return
-
-        setWorkouts(prev => prev.map(w =>
-            w.id === workoutId
-                ? {
-                    ...w,
-                    exercises: w.exercises.map(e => {
-                        if (e.id !== exerciseId || e.isEmom) return e
-                        return {
-                            ...e,
-                            params: normalizedParams,
-                            sets: (e.sets || []).map(set => {
-                                const nextSet = { ...set }
-                                normalizedParams.forEach(param => {
-                                    if (!hasTrackedValue(nextSet[param])) nextSet[param] = ''
-                                })
-                                return nextSet
-                            }),
-                        }
-                    }),
-                }
-                : w
-        ))
-    }, [])
-
     const toggleSetComplete = useCallback((workoutId, exerciseId, setId) => {
         setWorkouts(prev => prev.map(w =>
             w.id === workoutId
@@ -576,7 +549,6 @@ export default function useWorkouts() {
         addWarmupSet,
         removeSet,
         updateSet,
-        updateExerciseParams,
         toggleSetComplete,
         duplicateWorkout,
         updateWorkoutNotes,

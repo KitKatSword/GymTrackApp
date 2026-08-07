@@ -21,22 +21,6 @@ function getParamInputMode(p) {
     return p === "weight" || p === "rir" ? "decimal" : "numeric";
 }
 
-function getTrackingMode(params) {
-    const hasReps = params.includes("reps");
-    const hasRir = params.includes("rir");
-    if (hasReps && hasRir) return "reps-rir";
-    if (hasRir) return "rir";
-    return hasReps ? "reps" : "none";
-}
-
-function applyTrackingMode(params, mode) {
-    const base = params.filter(param => param !== "reps" && param !== "rir");
-    if (mode === "none") return base;
-    if (mode === "rir") return [...base, "rir"];
-    if (mode === "reps-rir") return [...base, "reps", "rir"];
-    return [...base, "reps"];
-}
-
 function formatMinSec(s) {
     const m = Math.floor(s / 60);
     const sec = s % 60;
@@ -56,7 +40,6 @@ export default function ExerciseCard({
     onCancelRest,
     onUpdateNotes,
     onUpdateExerciseRest,
-    onUpdateExerciseParams,
     activeRestSetId,
     isPastLog = false,
     setup = null,
@@ -72,7 +55,6 @@ export default function ExerciseCard({
     const gridTemplate = isPastLog
         ? `36px ${params.map(() => "1fr").join(" ")}${canRemoveSets ? " 32px" : ""}`
         : `28px ${params.map(() => "1fr").join(" ")} 36px${canRemoveSets ? " 32px" : ""}`;
-    const canConfigureRir = params.some(param => ["weight", "reps", "rir"].includes(param));
 
     const isResting = sets.some(s => s.id === activeRestSetId);
 
@@ -130,28 +112,6 @@ export default function ExerciseCard({
                         setShowTimePicker(false);
                     }}
                 />
-            )}
-
-            {canConfigureRir && onUpdateExerciseParams && (
-                <label className="exercise-tracking-mode">
-                    <span>Tracciamento</span>
-                    <select
-                        className="input"
-                        value={getTrackingMode(params)}
-                        onChange={(event) => onUpdateExerciseParams(
-                            workoutId,
-                            exercise.id,
-                            applyTrackingMode(params, event.target.value),
-                        )}
-                    >
-                        {params.some(param => param !== 'reps' && param !== 'rir') && (
-                            <option value="none">Senza reps/RIR</option>
-                        )}
-                        <option value="reps">Ripetizioni</option>
-                        <option value="reps-rir">Ripetizioni + RIR</option>
-                        <option value="rir">Solo RIR</option>
-                    </select>
-                </label>
             )}
 
             {/* Header row */}

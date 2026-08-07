@@ -62,7 +62,6 @@ export default function ActiveWorkout({
   onUpdateNotes,
   onUpdateExerciseNotes,
   onUpdateExerciseRest,
-  onUpdateExerciseParams,
   onUpdateEmom,
   onUpdateTimerState,
   onFinish,
@@ -337,7 +336,6 @@ export default function ActiveWorkout({
               onCancelRest={handleCancelRest}
               onUpdateNotes={onUpdateExerciseNotes}
               onUpdateExerciseRest={onUpdateExerciseRest}
-              onUpdateExerciseParams={onUpdateExerciseParams}
               activeRestSetId={activeRestSetId}
               setup={getExerciseSetup?.(ex)}
               onSaveSetup={onSaveExerciseSetup}

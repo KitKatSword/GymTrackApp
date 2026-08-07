@@ -97,7 +97,7 @@ export default function App() {
 
     const {
         workouts, createWorkout, createWorkoutFromRoutine, finishWorkout, deleteWorkout,
-        addExercise, removeExercise, addSet, addWarmupSet, removeSet, updateSet, updateExerciseParams,
+        addExercise, removeExercise, addSet, addWarmupSet, removeSet, updateSet,
         toggleSetComplete, duplicateWorkout, getStats,
         getPendingWorkout,
         updateExerciseRest, updateWorkoutColor, updateWorkoutTimerState, updateEmomExercise, createWorkoutOnDate, loadRoutineIntoWorkout,
@@ -231,7 +231,6 @@ export default function App() {
                     onUpdateNotes={workoutActions.updateWorkoutNotes}
                     onUpdateExerciseNotes={workoutActions.updateExerciseNotes}
                     onUpdateExerciseRest={updateExerciseRest}
-                    onUpdateExerciseParams={updateExerciseParams}
                     onUpdateEmom={updateEmomExercise}
                     onUpdateTimerState={updateWorkoutTimerState}
                     onFinish={handleFinishWorkout}
@@ -289,7 +288,6 @@ export default function App() {
                     onUpdateNotes={workoutActions.updateWorkoutNotes}
                     onUpdateExerciseNotes={workoutActions.updateExerciseNotes}
                     onUpdateExerciseRest={updateExerciseRest}
-                    onUpdateExerciseParams={updateExerciseParams}
                     onUpdateEmom={updateEmomExercise}
                     onFinish={handleFinishPastWorkout}
                     onGoBack={() => { clearActiveWorkout(); deleteWorkout(activeWorkout?.id); setActiveTab('history') }}

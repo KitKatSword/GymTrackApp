@@ -2,6 +2,16 @@ import { useState, useMemo } from 'react'
 import { getAllExercises, saveCustomExercise, updateCustomExercise, deleteCustomExercise, categories, PARAM_TYPES } from '../data/exercises'
 import { getInitials } from '../utils/text'
 
+const SERIES_PARAM_TYPES = PARAM_TYPES.filter(param => param.id !== 'emom')
+
+function switchExerciseMode(setParams, mode) {
+    setParams(previous => {
+        if (mode === 'emom') return ['emom']
+        const seriesParams = previous.filter(param => param !== 'emom')
+        return seriesParams.length > 0 ? seriesParams : ['weight', 'reps']
+    })
+}
+
 function generateId() {
     return 'custom-' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5)
 }
@@ -29,11 +39,10 @@ export default function ExerciseSearch({ onSelect, onClose }) {
     }, [search, category, allExercises])
 
     const toggleParam = (pid) => setNewParams(prev => {
-        if (pid === 'emom') return prev.includes('emom') ? [] : ['emom']
-        const withoutEmom = prev.filter(param => param !== 'emom')
-        return withoutEmom.includes(pid)
-            ? withoutEmom.filter(param => param !== pid)
-            : [...withoutEmom, pid]
+        const seriesParams = prev.filter(param => param !== 'emom')
+        return seriesParams.includes(pid)
+            ? seriesParams.filter(param => param !== pid)
+            : [...seriesParams, pid]
     })
 
     const handleCreate = () => {
@@ -77,11 +86,10 @@ export default function ExerciseSearch({ onSelect, onClose }) {
     }
 
     const toggleEditParam = (pid) => setEditParams(prev => {
-        if (pid === 'emom') return prev.includes('emom') ? [] : ['emom']
-        const withoutEmom = prev.filter(param => param !== 'emom')
-        return withoutEmom.includes(pid)
-            ? withoutEmom.filter(param => param !== pid)
-            : [...withoutEmom, pid]
+        const seriesParams = prev.filter(param => param !== 'emom')
+        return seriesParams.includes(pid)
+            ? seriesParams.filter(param => param !== pid)
+            : [...seriesParams, pid]
     })
 
     return (
@@ -152,20 +160,49 @@ export default function ExerciseSearch({ onSelect, onClose }) {
                         />
 
                         <div className="create-form-section">
-                            <div className="create-form-section-label">Parametri da tracciare</div>
+                            <div className="create-form-section-label">Modalità</div>
                             <div className="create-form-chips">
-                                {PARAM_TYPES.map(p => (
-                                    <button
-                                        key={p.id}
-                                        className={`chip ${newParams.includes(p.id) ? 'active' : ''}`}
-                                        onClick={() => toggleParam(p.id)}
-                                        style={{ flex: 1 }}
-                                    >
-                                        {p.label}
-                                    </button>
-                                ))}
+                                <button
+                                    type="button"
+                                    className={`chip ${!newParams.includes('emom') ? 'active' : ''}`}
+                                    onClick={() => switchExerciseMode(setNewParams, 'series')}
+                                    style={{ flex: 1 }}
+                                >
+                                    Serie
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`chip ${newParams.includes('emom') ? 'active' : ''}`}
+                                    onClick={() => switchExerciseMode(setNewParams, 'emom')}
+                                    style={{ flex: 1 }}
+                                >
+                                    EMOM
+                                </button>
                             </div>
                         </div>
+
+                        {!newParams.includes('emom') ? (
+                            <div className="create-form-section">
+                                <div className="create-form-section-label">Campi per ogni serie</div>
+                                <div className="create-form-chips">
+                                    {SERIES_PARAM_TYPES.map(p => (
+                                        <button
+                                            type="button"
+                                            key={p.id}
+                                            className={`chip ${newParams.includes(p.id) ? 'active' : ''}`}
+                                            onClick={() => toggleParam(p.id)}
+                                            style={{ flex: 1 }}
+                                        >
+                                            {p.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="exercise-mode-help">
+                                Minuti, ripetizioni e carico verranno configurati nel blocco EMOM.
+                            </div>
+                        )}
 
                         <button
                             onClick={handleCreate}
@@ -235,18 +272,43 @@ export default function ExerciseSearch({ onSelect, onClose }) {
                                     placeholder="Nome esercizio..."
                                     style={{ marginBottom: 'var(--space-2)' }}
                                 />
+                                <div className="create-form-section-label">Modalità</div>
                                 <div className="create-form-chips" style={{ marginBottom: 'var(--space-2)' }}>
-                                    {PARAM_TYPES.map(p => (
-                                        <button
-                                            key={p.id}
-                                            className={`chip ${editParams.includes(p.id) ? 'active' : ''}`}
-                                            onClick={() => toggleEditParam(p.id)}
-                                            style={{ flex: 1 }}
-                                        >
-                                            {p.label}
-                                        </button>
-                                    ))}
+                                    <button
+                                        type="button"
+                                        className={`chip ${!editParams.includes('emom') ? 'active' : ''}`}
+                                        onClick={() => switchExerciseMode(setEditParams, 'series')}
+                                        style={{ flex: 1 }}
+                                    >
+                                        Serie
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`chip ${editParams.includes('emom') ? 'active' : ''}`}
+                                        onClick={() => switchExerciseMode(setEditParams, 'emom')}
+                                        style={{ flex: 1 }}
+                                    >
+                                        EMOM
+                                    </button>
                                 </div>
+                                {!editParams.includes('emom') && (
+                                    <>
+                                        <div className="create-form-section-label">Campi per ogni serie</div>
+                                        <div className="create-form-chips" style={{ marginBottom: 'var(--space-2)' }}>
+                                            {SERIES_PARAM_TYPES.map(p => (
+                                                <button
+                                                    type="button"
+                                                    key={p.id}
+                                                    className={`chip ${editParams.includes(p.id) ? 'active' : ''}`}
+                                                    onClick={() => toggleEditParam(p.id)}
+                                                    style={{ flex: 1 }}
+                                                >
+                                                    {p.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </>
+                                )}
                                 <button
                                     className="btn btn-primary btn-full btn-sm"
                                     onClick={handleSaveEdit}

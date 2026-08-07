@@ -1565,23 +1565,6 @@ ol {
     color: var(--warning);
 }
 
-.exercise-tracking-mode {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-3);
-    margin: calc(-1 * var(--space-1)) 0 var(--space-2);
-    color: var(--text-muted);
-    font-size: var(--text-xs);
-}
-
-.exercise-tracking-mode .input {
-    width: auto;
-    min-height: 34px;
-    padding: 4px 28px 4px 8px;
-    font-size: var(--text-xs);
-}
-
 .exercise-setup-panel {
     margin-top: var(--space-2);
     border-top: 1px solid var(--border);
@@ -2045,6 +2028,16 @@ ol {
     display: flex;
     gap: 6px;
     flex-wrap: wrap;
+}
+
+.exercise-mode-help {
+    margin: calc(-1 * var(--space-1)) 0 var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    background: var(--bg-input);
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+    line-height: 1.45;
 }
 
 /* ===== Create Exercise Toggle ===== */

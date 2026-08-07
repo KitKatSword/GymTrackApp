@@ -63,18 +63,6 @@ export default function WorkoutTab({
         ))
     }
 
-    const handleTrackingMode = (idx, mode) => {
-        setSelectedExercises(prev => prev.map((exercise, index) => {
-            if (index !== idx) return exercise
-            const baseParams = (exercise.params || ['weight', 'reps'])
-                .filter(param => param !== 'reps' && param !== 'rir')
-            const trackingParams = mode === 'none' ? [] : mode === 'rir'
-                ? ['rir']
-                : mode === 'reps-rir' ? ['reps', 'rir'] : ['reps']
-            return { ...exercise, params: [...baseParams, ...trackingParams] }
-        }))
-    }
-
     const handleSave = () => {
         if (!routineName.trim() || selectedExercises.length === 0) return
         if (editingRoutineId) {
@@ -135,7 +123,6 @@ export default function WorkoutTab({
                     selectedExercises={selectedExercises}
                     onSetCountChange={handleSetCount}
                     onWarmupCountChange={handleWarmupCount}
-                    onTrackingModeChange={handleTrackingMode}
                     onRemoveExercise={handleRemoveExercise}
                     onOpenExercisePicker={() => setShowExercisePicker(true)}
                     onSave={handleSave}

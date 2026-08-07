@@ -42,7 +42,6 @@ export default function LogPastWorkout({
     onToggleSet,
     onUpdateExerciseNotes,
     onUpdateExerciseRest,
-    onUpdateExerciseParams,
     onUpdateEmom,
     onUpdateNotes,
     onFinish,
@@ -189,7 +188,6 @@ export default function LogPastWorkout({
                         onStartRest={handleStartRest}
                         onUpdateNotes={onUpdateExerciseNotes}
                         onUpdateExerciseRest={onUpdateExerciseRest}
-                        onUpdateExerciseParams={onUpdateExerciseParams}
                         activeRestSetId={null}
                         isPastLog={true}
                         setup={getExerciseSetup?.(ex)}
